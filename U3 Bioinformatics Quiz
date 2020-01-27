@@ -1,0 +1,101 @@
+#
+####################################################################################
+# Miniquiz 
+
+# Write the script in notepad and save this with your name in the title in your wd 
+# You should mail this to me a.paterson@bristol.ac.uk when you have finished.
+# You need to hand in all appropriate files and the script (which I will use to replicate your analysis).
+
+# Good luck - remember, the internet is your friend! 
+
+
+# 1) Using R, find out what gene Accession number "U19906" is and print the first
+#    25 results
+getwd()
+setwd("/Users/aminachabach/Molecular Neuroscience/AChabach_1648766_U3Quiz") 
+dir("/Users/aminachabach/Molecular Neuroscience/AChabach_1648766_U3Quiz")
+install.packages("/Users/aminachabach/Molecular Neuroscience/AChabach_1648766_U3Quiz/Digestion", repos = NULL, type="source")
+install.packages("seqinr")
+if (!requireNamespace("BiocManager", quietly = TRUE)) 
+  install.packages("BiocManager")
+BiocManager::install("Biostrings")
+library("Digestion") 
+library("seqinr")
+library("Biostrings")
+
+#It is Human arginine vasopressin receptor 1 (AVPR1) gene
+choosebank()
+choosebank("genbankseqinr")
+AVPR1 = query("AVPR1", "AC=U19906")
+
+AVPR1seq = getSequence( AVPR1$req[[1]])
+annots = getAnnot(AVPR1$req[[1]]) 
+annots[1:25] #print of the first 25 results
+
+# 2) Get the sequence for "U19906" and name it with the ID and your last name 
+#    (e.g. OxtPaterson = Oxytocin and Paterson initials). Save the sequence in .fasta format
+
+AVPR1seq2 = AVPR1seq
+closebank()
+write.fasta(names="AVPR1seq2", sequences= AVPR1seq2, file.out="AVPR1Chabach")
+AVPR1Chabach = read.fasta("AVPR1Chabach")
+AVPR1Chabach
+
+# 3) Get the partial sequence of 2600bp - 3300bp. Save this sequence to your wd in .fasta format
+
+AVPR1Chabach.par = AVPR1seq2[2600:3300] 
+write.fasta(names="AVPR1Chabach.par", sequences= AVPR1Chabach.par, file.out="AVPR1Chabach.partial")
+AVPR1Chabach.Q3.partial = read.fasta("AVPR1Chabach.partial")
+AVPR1Chabach.Q3.partial #partial sequence of 2600bp - 3300bp in .fasta format
+
+# 4) Using the package 'Digestion' get R to tell you the restriction site and cut site
+#    of YOUR enzyme.
+
+library(Digestion)
+data(allRestrictionEnzymes)
+getRestrictionEnzyme("FokI")
+library("Biostrings")
+
+AVPR1.Chabach.partial.2 = readDNAStringSet ("AVPR1Chabach.partial")
+Q4.digest=getDigestionFragments(Restriction=c("FokI"),DNASequence= AVPR1.Chabach.partial.2)
+
+# 5) How many fragments does YOUR enzyme make on the sequence? Save this as a table in your wd.
+
+write.table(Q4.digest, "Q4.digest.csv", sep="\t", row.names=TRUE, col.names=TRUE)
+
+# 6) Can you tell R to return you the length of all fragments that your enzyme will cut
+# Remember the tutorial
+
+Digest.table =read.table("Q4.digest.csv") #complete table
+Digest.table[,7] #Only column 7 i.e. the lengths of the fragments
+
+# 7) Apply the following commands to your partial sequence and save the files in .fasta format
+
+reverseComplement=reverseComplement(AVPR1.Chabach.partial.2)  #returns the reverse compliment of a sequence
+write.fasta(names="reverseComplement", sequences= reverseComplement, file.out="reverseComplement")
+
+Translated =translate(AVPR1.Chabach.partial.2)          #returns the protein sequence from your sequence
+write.fasta(names="Translated", sequences=Translated, file.out = "Translated")
+
+# REFERENCES
+# 1. http://www.r-project.org/
+# 2. http://www.bioconductor.org/
+# 3. http://a-little-book-of-r-for-bioinformatics.readthedocs.org/
+# 4. http://www.gardenersown.co.uk/Education/Lectures/R/index.htm
+####################################################################################
+
+#You should e-mail me a document that includes all the saved .fasta files and the script that you used so that
+#I can run it and mark your work accordingly.
+
+# Marking
+# Enthusiasm = 5 
+# Script     = 10
+Q1 = 5
+Q2 = 10
+Q3 = 10
+Q4 = 10
+Q5 = 10 
+Q6 = 20
+Q7 = 20
+
+
