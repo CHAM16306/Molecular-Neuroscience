@@ -1,0 +1,158 @@
+####################################################### ####################################################### # A brief practical in programming in R for bioinformatics I ####################################################### #######################################################
+#####################INTRODUCTION####################### 
+# 1. R is a free resource with a committed and helpful community. I have tried
+# to reference URL's in the text that will help. But the internet is a fantastic place. 
+# search using the terms R project rather than just R though...
+# 2. Any comments written in R after a '#' sign are considered to be a 
+# comment rather than a command and therefore ignored.
+# 3. It is best to work in a text file rather than in R itself - you 
+# can better track bugs that way.
+# 4. The scripts presented here are best to 'copy' (ctrl+C) and 'paste' (ctrl+V).
+# Don't copy and paste the '>' before each command. These are left in to slow #things
+# down and stop nightmare unfixable errors.
+# 5. R is cAsE SeNsItIvE - so if you can't work out why it won't work - consider #this...
+# 6. No-one learns R in a day, or a week, or a year. R is an ongoing project that #will deal
+# with new problems in Biology as they arise
+
+####################################################### ####################################################### 
+# Starting off in R using an example from bird data ####################################################### #######################################################
+########################### 1 #########################
+#Make a folder on your C drive called RI
+#R wants you to define the 'working directory (wd)'. The wd is where R will #automatically save and load files to and from.
+getwd() #to check which working directory is being used
+setwd("/Users/aminachabach/Molecular Neuroscience/RI")
+# Have a look inside the file
+dir() #with and without path to file works
+dir("/Users/aminachabach/Molecular Neuroscience/RI")
+# You have now established the working directory!
+
+########################### 2 ######################### 
+# Using R to input small dataset
+a = 59
+b = 55 
+c = 53.5 
+d = 55 
+e = 52.5
+
+########################### 3 ######################## 
+# Look at the data points
+a
+b
+# R is case sensitive remember. Try typing a letter A-Z in capitals
+A
+
+########################### 4 ######################## 
+# Assign sensible names to the data (this data is from sparrows).
+Wing1 = 59
+Wing2 = 55
+Wing3 = 53.5 
+Wing4 = 55
+Wing5 = 52.5
+
+# You have done the same thing here that you have done above in 
+# section 3, but the variable names are useful.
+
+########################### 5 ######################## 
+# R is a calculator - so work the data!
+sqrt (Wing1)
+2* Wing1
+Wing1 + Wing2 + Wing3 + Wing4 + Wing5
+(Wing1 + Wing2 + Wing3 + Wing4 + Wing5) / 5
+
+########################### 6 ######################## 
+# R does do calculations, but does not store the output - good to
+# define new variables instead
+SQ.wing1 = sqrt(Wing1)
+Mul.W1 = 2*Wing1
+Sum.12 = Wing1 + Wing2
+SUM12345 = Wing1 + Wing2 + Wing3 + Wing4 + Wing5 
+AV = (Wing1 + Wing2 + Wing3 + Wing4 + Wing5) / 5
+SQ.wing1 > Mul.W1
+Sum.12
+SUM12345 > AV
+# Now you can reuse the square root of wing 1 in other calculations
+# without having to repeat the square-root each time - important in big # analysis.
+(Wing1 + Wing2 + Wing3 + Wing4 + Wing5) + ((Wing1 + Wing2 + Wing3 + Wing4 + Wing5) / 5)
+# or
+easysum = SUM12345 + AV #(which can again be assigned a variable)
+
+########################### 7 ######################## 
+
+# Concatenating data with the c function (concatenate means joining
+# strings) The function 'c()' is used to do this.
+Wingcrd = c(59, 55, 53.5, 55, 52.5, 57.5, 53, 55)
+# The c() function has created a single vector of length 8. # To view all values:
+Wingcrd
+# To view a particular value
+
+Wingcrd[1]
+Wingcrd[2]
+# To view a particular range of values - this WILL be useful in the test...
+Wingcrd[1 : 5]
+# To exclude a particular value
+Wingcrd[-2]
+# Input the following data
+Tarsus = c(22.3, 19.7, 20.8, 20.3, 20.8, 21.5, 20.6, 21.5) 
+Head = c(31.2, 30.4, 30.6, 30.3, 30.3, 30.8, 32.5, NA)
+Wt = c(9.5, 13.8, 14.8, 15.2, 15.5, 15.6, 15.6, 15.7)
+
+########################### 8 ######################
+# We have capitalised, our variable names up till this point. 
+# This is because functions are written in lower case and we # might stumble across a function. Check for function names # by typing '?' before a name
+?head 
+?Head
+
+########################### 9 ##################### 
+# Notice how the head size for one of the birds was not measured.
+# This value has been assigned 'NA'
+# Some functions have trouble with 'NA'
+sum(Head)
+# Why? By typing ‘?’ before a function we can find out the parameters of 
+# that function and change it if necessary
+sum 
+# The function sum has in its usage: sum(..., na.rm = FALSE) The usage allows 
+# you to change certain parameters. Changing 'na.rm = FALSE' to 'na.rm = TRUE' 
+# will result in the removal of any missing (NA) values in the vector
+sum(Head, na.rm = TRUE)
+
+########################### 10 ##################### 
+# Combining variables with c, cbind and rbind
+# We can concatenate the variables containing the values
+BirdData = c(Wingcrd, Tarsus, Head, Wt) 
+BirdData
+# R produces all 32 observations as a single vector. But these are meaningless 
+#without variable names. We can use the function cbind to combine data and 
+#variables
+Z = cbind(Wingcrd, Tarsus, Head, Wt) #cbind for columns
+Z
+# We can ask R about the dimensions of z
+dim(Z)
+# We can organise data into rows
+Z2 = rbind(Wingcrd, Tarsus, Head, Wt) #rbind for rows
+Z2
+# We can now ask questions about the data (Z) There is a deliberate mistake to #be found and fixed. We use function followed by [row , column] This will be #useful later in the test...
+?mean
+MeanWing = mean(Z[,1]) 
+MeanTarsus = mean(Z[,2]) 
+MeanHead = mean(Z[,3], na.rm=TRUE) #add na.rm=TRUE to remove NA from the mean 
+MeanWt = mean(Z[,4])
+MeanWing 
+MeanTarsus 
+MeanHead 
+MeanWt
+# And then add this to the data
+MeanVal = c(MeanWing, MeanTarsus, MeanHead, MeanWt) 
+x = rbind(Z, MeanVal) #adding bottom row to Z which is a list of columns
+x
+
+########################### 11 ######################### 
+# Functions used here...
+getwd() 
+# Returns your which working directory you are in setwd() 
+# Instructs R to change the working directory
+dir() # has a look inside the working directory
+c() # Concatenates strings
+cbind() # Concatenates strings and variables into columns rbind() 
+# Concatenates strings and variables into rows?... 
+# Finds literature and help on functions in R help()
+# " " " "
