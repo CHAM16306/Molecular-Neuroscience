@@ -1,0 +1,84 @@
+####################################################### ####################################################### #Programming in R for bioinformatics II ####################################################### #######################################################
+#Make a file on the C drive
+#Set that file as your wd
+#Save file named 'Digestion_1.0.tar.gz' and files ‘R handout II.docx (attached to email) into your wd
+#Set working directory
+getwd()
+setwd("/Users/aminachabach/Molecular Neuroscience/RI") 
+dir("/Users/aminachabach/Molecular Neuroscience/RI")
+#Install the packages required
+#Digestion
+#install.packages
+install.packages("/Users/aminachabach/Molecular Neuroscience/RI/Digestion", repos = NULL, type="source")
+#SeqinR
+install.packages("seqinr")
+#Biostrings
+if (!requireNamespace("BiocManager", quietly = TRUE)) 
+install.packages("BiocManager")
+BiocManager::install("Biostrings")
+# Once you have the package on the machine it is in your R file. But you need to chase the library each time you start a new analysis.
+library("Digestion") 
+library("seqinr")
+library("Biostrings")
+
+# Using R using to manipulate gene data
+# Below, the script reads the sequence and annotation
+# from ncbi using the Genbank accession (AC) “AY389507”
+# 'choosebank()' will allow us to look at the different ncbi resources we can 
+#search. We want to use Genbank to search accession numbers (AC)
+choosebank() #gives you options of all banks available
+choosebank("genbank")
+?query
+arp = query("arp", "AC= X01637")
+# “arp” = output (in this case my initials), AC=Search-term (accession number) 
+# Use getSequence to get the sequence!
+arpseq = getSequence(arp $req[[1]]) #need $req[[1]] but dunno why
+# Use getAnnot to get the annotations!
+annots <- getAnnot(arp $req[[1]]) 
+annots[1:20]
+# Rename Sequence file
+X = arpseq
+# Determine size and GC content of sequence
+length(X) > GC(X)
+?GC #Calculates the fractional G+C content of nucleic acid sequences.
+# Close Genbank (saves memory in bigger progs)
+closebank()
+
+
+# Save files in .fasta format
+# Okay, so we have a sequence - but you won't want to find this on every 
+#session AND there are formats that are acceptable for seq storage... fasta for #example...
+# Save this file in .fasta format (give it a good name now you know it)
+write.fasta(names="X", sequences= X, file.out="X.fasta")
+# you can read this file like this
+xy = read.fasta("X.fasta")
+# We want to look at a partial section of this gene...
+Xpar = X[10:999]
+# And save it
+write.fasta(names="Xpar", sequences= Xpar, file.out="Xpar.fasta")
+nm = read.fasta("Xpar.fasta")
+# In silico digestion of this sequence
+# We will now use the package 'Digestion' that we loaded up at the start. This #package will perform an in silico (on computer) digestion using in silico #restriction enzymes
+library(Digestion)
+# First we need to assign a table of data stored in the digestion package
+data(allRestrictionEnzymes)
+# Imagine we are interested in the restriction enzyme 'BanI'. We can find out the #sequence and cut using the getRestrictionEnzyme() function
+
+getRestrictionEnzyme("BanI")
+# But we want to know how many cuts this RE will make on our sequence and 
+#what the size of the fragments are?
+library("Biostrings")
+# Read par.fasta file into R as a string
+Xpar1 = readDNAStringSet ("Xpar.fasta")
+# Cut sequences with restriction enzyme
+par=getDigestionFragments(Restriction=c("BanI"),DNASequence= Xpar1)
+par
+# Write this to your file
+write.table(par, "par.csv", sep="\t", row.names=FALSE, col.names=FALSE)
+write.table(par, "par.csv2", sep="\t", row.names=TRUE, col.names=TRUE)
+read.table("par.csv")
+read.table("par.csv2")
+
+?write.table
+
+
