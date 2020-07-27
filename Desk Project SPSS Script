@@ -1,0 +1,228 @@
+* Encoding: UTF-8.
+
+DATASET ACTIVATE DataSet1.
+
+# Codebook to look at the data
+
+CODEBOOK cohort_AD_control [n]
+  /VARINFO POSITION LABEL TYPE FORMAT MEASURE ROLE VALUELABELS MISSING ATTRIBUTES
+  /OPTIONS VARORDER=VARLIST SORT=ASCENDING MAXCATS=200
+  /STATISTICS COUNT PERCENT MEAN STDDEV QUARTILES.
+
+#########################################################################################
+
+# Recoding of the variables (Transform -> Recode into different variables)
+
+RECODE SEX ('F'=1) ('M'=0) INTO sex_rec.
+VARIABLE LABELS  sex_rec 'sex_rec'.
+EXECUTE.
+
+RECODE cohort_htn ('1. Control'=0) ('2. AD'=1) ('3. Mixed'=-1) ('4. VaD'=-2) 
+INTO cohort_rec.
+VARIABLE LABELS cohort_rec 'Hypertension cohort group_rec'.
+EXECUTE.
+
+RECODE htn ('No'=0) ('Yes'=1) 
+INTO htn_rec.
+VARIABLE LABELS  htn_rec 'Hypertension ever in life'.
+EXECUTE.
+
+RECODE htn_diag ('No'=0) ('Yes'=1) 
+INTO htn_diag_rec.
+VARIABLE LABELS  htn_diag_rec 'Hypertension diagnosed clinically during life'.
+EXECUTE.
+
+RECODE htn_midlife ('No'=0) ('Yes'=1) 
+INTO htn_midlife_rec.
+VARIABLE LABELS  htn_midlife_rec 'Hypertension in midlife'.
+EXECUTE.
+
+RECODE latelife_bp ('No'=0) ('Yes'=1) 
+INTO latelife_bp_rec.
+VARIABLE LABELS  latelife_bp_rec 'Late-life bp measurements'.
+EXECUTE.
+
+RECODE braak_group ('0-II'=0) ('III-IV'=1) ('V-VI'=2) 
+INTO braak_group_rec.
+VARIABLE LABELS  braak_group_rec 'Braak stage group (0-II, III-IV, V-VI)'.
+EXECUTE.
+
+RECODE Infarcts_any ('1'=1) ('.'=0) 
+INTO Infarcts_any_rec.
+VARIABLE LABELS  Infarcts_any_rec 'Infarcts of any size'.
+EXECUTE.
+
+#########################################################################################
+
+# Categorisation of the variables; Numeric; 
+# Scale (ordered categories with a meaningful metric) /Nominal (categories with no intrinsic ranking)
+# /Ordinal (categories with some intrinsic ranking)
+
+#########################################################################################
+
+# A look at variable distribution
+# For nominal/ordinal: Frequency distributation or pie chart (i.e. cohort_AD_control)
+# For scale: mean or histogram (i.e. DBP_midlife_mean etc)
+
+FREQUENCIES VARIABLES=cohort_AD_control
+  /BARCHART FREQ
+  /ORDER=ANALYSIS.
+#Nominal 
+
+FREQUENCIES VARIABLES=DBP_midlife_mean
+  /NTILES=4
+  /HISTOGRAM NORMAL 
+  /ORDER=ANALYSIS.
+#Scale
+#includes the mean and SD  
+#NORMAL for normal districbution curve
+
+FREQUENCIES VARIABLES=CERAD_group
+  /BARCHART FREQ
+  /ORDER=ANALYSIS.
+#Ordinal
+
+FREQUENCIES VARIABLES=AGE
+  /NTILES=4
+  /STATISTICS=STDDEV SEMEAN MEAN MEDIAN MODE
+  /HISTOGRAM 
+  /ORDER=ANALYSIS.
+
+#########################################################################################
+
+#looking at two variables together
+#Two-way tables & clustered bar charts for nominal and ordinal variables
+
+# Crosstabulations
+# Missing values and crosstab need to be run together (!!)
+# except for cohort_AD_control bc here removing values was on purpose?
+
+MISSING VALUES htn_rec htn_diag_rec htn_midlife_rec ().
+
+# The empty brackets () in this command remove any missing values from those variables, 
+# making sure that all codes for those variables are recognised by SPSS.
+
+CROSSTABS
+  /TABLES=cohort_AD_control BY htn_rec htn_diag_rec htn_midlife_rec
+  /FORMAT=AVALUE TABLES
+  /CELLS=COUNT ROW COLUMN TOTAL  #which percentages to show, here all
+  /COUNT ROUND CELL
+  /BARCHART.
+
+CROSSTABS
+  /TABLES=braak_stage BY htn_rec htn_diag_rec htn_midlife_rec
+  /FORMAT=AVALUE TABLES
+  /CELLS=COUNT 
+  /COUNT ROUND CELL
+  /BARCHART.
+
+#For stacked bar chart
+#for displaying the relationship between two nominal or ordinal variables
+
+* Chart Builder.
+GGRAPH
+  /GRAPHDATASET NAME="graphdataset" VARIABLES=htn_rec COUNT()[name="COUNT"] braak_stage 
+    MISSING=LISTWISE REPORTMISSING=NO
+  /GRAPHSPEC SOURCE=INLINE.
+BEGIN GPL
+  SOURCE: s=userSource(id("graphdataset"))
+  DATA: htn_rec=col(source(s), name("htn_rec"), unit.category())
+  DATA: COUNT=col(source(s), name("COUNT"))
+  DATA: braak_stage=col(source(s), name("braak_stage"), unit.category())
+  GUIDE: axis(dim(1), label("Hypertension (ever in life)"))
+  GUIDE: axis(dim(2), label("Percent"))
+  GUIDE: legend(aesthetic(aesthetic.color.interior), label("\nBraak tangle stage (0-VI)"))
+  GUIDE: text.title(label("Stacked Bar Percent of \nHypertension (ever in life) by \nBraak ",
+    "tangle stage (0-VI)"))
+  SCALE: cat(dim(1), include("0.00", "1.00"))
+  SCALE: linear(dim(2), include(0))
+  ELEMENT: interval.stack(position(summary.percent(htn_rec*COUNT, base.all(acrossPanels()))), 
+    color.interior(braak_stage), shape.interior(shape.square))
+END GPL.
+
+#########################################################################################
+
+
+#Looking at a scalar variable by groups
+#dependent (scale) and factor list (nominal)
+
+
+EXAMINE VARIABLES=DBP_midlife_mean BY cohort_AD_control
+  /PLOT HISTOGRAM
+  /STATISTICS DESCRIPTIVES
+  /CINTERVAL 95
+  /MISSING LISTWISE
+  /NOTOTAL.
+
+#separate descriptive statistics and histograms for AD and controls
+
+
+#########################################################################################
+
+#Comparing using T test
+#Dependent variable = scale
+#Independent variable = nominal (binary)
+
+#Comparing diastolic midlife bp by sex
+
+T-TEST GROUPS=sex_rec(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=SBP_midlife_mean
+  /CRITERIA=CI(.95).
+#males (135) sig lower DBP in midlife compared to females (142) (p=0.010)
+
+#Comparing Abeta42 by hypertension ever in life (no sig.)
+
+T-TEST GROUPS=htn_rec(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=AB42insol_fcx
+  /CRITERIA=CI(.95).
+
+
+#########################################################################################
+
+#Test of association
+#Logistic regression (nominal & any)
+#Remember to define categorical (i.e., an ordinal or nominal variable). 
+#Run all logistic regressions separately bc otherwise missing cases number too high?
+
+
+#########################################################################################
+#########################################################################################
+#########################################################################################
+
+#TASK 1: Summary demographic and neuropathological data of the hypertensive and normotensive AD brains
+
+#Three-way crosstab for sex; AD/Control; HT/Norm
+
+CROSSTABS
+  /TABLES=cohort_AD_control BY htn_rec BY sex_rec
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ 
+  /CELLS=COUNT
+  /COUNT ROUND CELL
+  /BARCHART.
+
+#To compare HT and conrtol mean age and mean PMD need to split data set (Data->Split Data->htn_rec&cohort_AD_Control)
+#[DataSet2] /Users/aminachabach/Molecular Neuroscience/Desk Project 2020.Data/HTN Data MSc Project_Split Data.sav
+
+DATASET ACTIVATE DataSet2.
+SORT CASES  BY htn_rec cohort_AD_control.
+SPLIT FILE LAYERED BY htn_rec cohort_AD_control.
+
+FREQUENCIES VARIABLES=PMDELAY AGE
+  /FORMAT=NOTABLE
+  /STATISTICS=STDDEV MINIMUM MAXIMUM MEAN MEDIAN
+  /ORDER=ANALYSIS.
+
+
+#########################################################################################
+
+#TASK 2: Is there an association between midlife or late-life SBP or DBP and AD?
+
+# Is there a significant difference between mean SBP and mean DBP in AD vs Controls?
+# Comparing the means of two independent groups (AD vs Control) = t test
+# Assumptions: Normality and Homogeneity of variance (levene's test must be non-significant)
+
+
+
