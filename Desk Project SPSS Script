@@ -367,6 +367,7 @@ LOGISTIC REGRESSION VARIABLES cohort_AD_control
   /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
 
 
+
 #########################################################################################
 #########################################################################################
 
@@ -374,8 +375,10 @@ LOGISTIC REGRESSION VARIABLES cohort_AD_control
 
 #########################################################################################
 #########################################################################################
+
 # Comparing the means of two independent groups (HT vs Norm) = t test (using non-split data)
 # Assumptions: Normality and Homogeneity of variance: levenes test must be non-significant
+# Shapiro-Wilk test as our numerical means of assessing normality (or hist or qqplot)
 #Non-normal distribution for all so Mann-Whitney for all
 
 #3.1. Aβ load (%)
@@ -446,20 +449,92 @@ NPAR TESTS
 #Aβ42 insoluble in precuneus white matter in HT compared to normotensive (p = 0.024)
 
 #All non-sig. except for Aβ42 insoluble in precuneus white matter
-#Aβ42 insoluble highest in precuneus white matter in HT (118.21) compared to norm (90.91)
+#Aβ42 insoluble highest in precuneus white matter in HT (118.21) compared to norm (90.91)*
+
+#########################################################################################
+
+#3.5. Repeat all but with hypertension in mid-life instead of hypertension ever in life
+
+NPAR TESTS
+  /M-W= AB40insol_fcx AB40insol_pccx AB42insol_fcx AB42insol_fwm AB42insol_pccx AB42insol_pcwm 
+    ab_4G8_f ab_4G8_p AT8_F AT8_P BY htn_midlife_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#All non-sig. except for Aβ load - parietal
+#Aβ load - parietal highest in norm (75.42) compared to HT (59.31)*
+#Tau load parietal, p=0.056 (highest in norm (57.95) compared to HT (45.95))*
 
 
 #########################################################################################
 #########################################################################################
 
-#TASK 3: Is there a relationship between hypertension and a reduction in blood flow in the cerebral cortex and white matter?
+#TASK 4: Is there a relationship between hypertension and a reduction in blood flow in the cerebral cortex and white matter?
 
 #########################################################################################
 #########################################################################################
 
+# Comparing the means of two independent groups (HT vs Norm) = t test (using non-split data)
+# Assumptions: Normality and Homogeneity of variance: levenes test must be non-significant
+#Check for normal distribution
 
+#4.1. VEGF-A
+#Non-normal distribution for all so Mann-Whitney for all
 
+NPAR TESTS
+  /M-W= VEGF_fcx2 VEGF_fwm2 VEGF_pccx2 VEGF_pcwm2 BY htn_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
 
+#VEGF-A in fcx in HT compared to normotensive
+#VEGF-A in precuneus cxin HT compared to normotensive 
+#VEGF-A in fwm in HT compared to normotensive
+#VEGF-A in precuneus wm in HT compared to normotensive
+
+#All non-sig. 
+
+#########################################################################################
+
+#4.2. Haemoglobin-adjusted Fibrinogen
+#Non-normal distribution for all so Mann-Whitney for all
+
+NPAR TESTS
+  /M-W= FGA_Hb_fcx FGA_Hb_fwm FGA_Hb_pcx FGA_Hb_pwm BY htn_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#Haemoglobin-adjusted Fibrinogen in fcx in HT compared to normotensive
+#Haemoglobin-adjusted Fibrinogen in precuneus cx in HT compared to normotensive
+#Haemoglobin-adjusted Fibrinogen in fwm in HT compared to normotensive
+#Haemoglobin-adjusted Fibrinogen in precuneus wm in HT compared to normotensive
+
+#All non-sig. 
+
+#########################################################################################
+
+#4.4. PDGFRB
+
+#PDGFRB in precuneus cx in HT compared to normotensive (normal)
+#PDGFRB in fwm in HT compared to normotensive (normal)
+#normal distribution; check levenes, if non sig. then t test
+
+T-TEST GROUPS=htn_rec(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=PDGFRB_pccx2 PDGFRB_fwm2
+  /CRITERIA=CI(.95).
+
+#All non-sig. 
+
+#PDGFRB in fcx in HT compared to normotensive (not normal)
+#PDGFRB in precuneus wm in HT compared to normotensive (not normal)
+#Mann-Whitney
+
+NPAR TESTS
+  /M-W= PDGFRB_fcx2 PDGFRB_pcwm2 BY htn_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#All non-sig. 
 
 
 
