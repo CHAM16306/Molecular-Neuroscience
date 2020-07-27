@@ -379,6 +379,7 @@ LOGISTIC REGRESSION VARIABLES cohort_AD_control
 # Comparing the means of two independent groups (HT vs Norm) = t test (using non-split data)
 # Assumptions: Normality and Homogeneity of variance: levenes test must be non-significant
 # Shapiro-Wilk test as our numerical means of assessing normality (or hist or qqplot)
+#Data normal if shapiro non sig.
 #Non-normal distribution for all so Mann-Whitney for all
 
 #3.1. Aβ load (%)
