@@ -367,17 +367,95 @@ LOGISTIC REGRESSION VARIABLES cohort_AD_control
   /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
 
 
+#########################################################################################
+#########################################################################################
+
+#TASK 3: What is the relationship between HT and markers of disease severity?
+
+#########################################################################################
+#########################################################################################
+# Comparing the means of two independent groups (HT vs Norm) = t test (using non-split data)
+# Assumptions: Normality and Homogeneity of variance: levenes test must be non-significant
+#Non-normal distribution for all so Mann-Whitney for all
+
+#3.1. Aβ load (%)
+
+#Aβ load (%) – frontal in HT compared to normotensive
+
+NPAR TESTS
+  /M-W= ab_4G8_f BY htn_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#HT group highest Aβ load 
+#Non-sig. (U = 3578.500, p = 0.649)
+
+#Aβ load (%) – parietal in HT compared to normotensive
+
+NPAR TESTS
+  /M-W= ab_4G8_p BY htn_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#Norm group highest Aβ load 
+#Non-sig. (U = 3045.500, p = 0.624)
+
+#########################################################################################
+
+#3.2. Tau (%) load 
+
+NPAR TESTS
+  /M-W= AT8_F AT8_P BY htn_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#Tau (%) load – frontal in HT compared to normotensive
+#Norm group highest Tau load 
+#Non-sig. (U = 659.000, p = 0.660)
+
+#Tau (%) load – parietal in HT compared to normotensive
+#Norm group highest Tau load 
+#Non-sig. (U = 511.000, p = 0.533)
 
 
+#########################################################################################
+
+#3.3. Aβ40 insoluble
+
+NPAR TESTS
+  /M-W= AB40insol_fcx AB40insol_pccx BY htn_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#Aβ40 insoluble in fcx in HT compared to normotensive (p = 0.213)
+#Aβ40 insoluble in precuneus cortex in HT compared to normotensive (p=0.833)
+#Both non-sig.
+
+#########################################################################################
+
+#3.4. Aβ42 insoluble 
+
+NPAR TESTS
+  /M-W= AB42insol_fcx AB42insol_fwm AB42insol_pccx AB42insol_pcwm BY htn_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#Aβ42 insoluble in fcx in HT compared to normotensive  (p = 0.409)
+#Aβ42 insoluble in precuneus cortex in HT compared to normotensive (p = 0.485)
+#Aβ42 insoluble in fwm in HT compared to normotensive (p = 0.456)
+#Aβ42 insoluble in precuneus white matter in HT compared to normotensive (p = 0.024)
+
+#All non-sig. except for Aβ42 insoluble in precuneus white matter
+#Aβ42 insoluble highest in precuneus white matter in HT (118.21) compared to norm (90.91)
 
 
+#########################################################################################
+#########################################################################################
 
+#TASK 3: Is there a relationship between hypertension and a reduction in blood flow in the cerebral cortex and white matter?
 
-
-
-
-
-
+#########################################################################################
+#########################################################################################
 
 
 
