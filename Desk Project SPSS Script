@@ -193,6 +193,9 @@ T-TEST GROUPS=htn_rec(0 1)
 
 #TASK 1: Summary demographic and neuropathological data of the hypertensive and normotensive AD brains
 
+#########################################################################################
+#########################################################################################
+
 #Three-way crosstab for sex; AD/Control; HT/Norm
 
 CROSSTABS
@@ -215,14 +218,174 @@ FREQUENCIES VARIABLES=PMDELAY AGE
   /STATISTICS=STDDEV MINIMUM MAXIMUM MEAN MEDIAN
   /ORDER=ANALYSIS.
 
-
+#########################################################################################
 #########################################################################################
 
 #TASK 2: Is there an association between midlife or late-life SBP or DBP and AD?
 
-# Is there a significant difference between mean SBP and mean DBP in AD vs Controls?
+#########################################################################################
+#########################################################################################
+
+# 2.1. Is there a significant difference between mean mid-life SBP and mean mid-life DBP in AD vs Controls?
+
 # Comparing the means of two independent groups (AD vs Control) = t test
 # Assumptions: Normality and Homogeneity of variance (levene's test must be non-significant)
+
+
+DATASET ACTIVATE DataSet1.
+T-TEST GROUPS=cohort_AD_control(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=SBP_midlife_mean
+  /CRITERIA=CI(.95).
+
+#Individuals with AD did not have siginificantly higher mid-life SBP compared to controls. 
+#SBP AD = 139.00 ± 17.98
+#SBP Conrol = 138.00 ±15.87
+#p=0.904
+# t(103)=-.121
+
+
+DATASET ACTIVATE DataSet1.
+T-TEST GROUPS=cohort_AD_control(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=DBP_midlife_mean
+  /CRITERIA=CI(.95).
+
+#Individuals with AD did not have siginificantly higher mid-life DBP compared to controls. 
+#DBP AD = 82.96 ± 9.06
+#DBP Conrol = 82.73 ± 8.98
+#p=0.901
+# t(103)=-.125
+
+#########################################################################################
+
+# 2.2. Is there a significant difference between mean late-life SBP and mean late-life DBP in AD vs Controls?
+
+# Comparing the means of two independent groups (AD vs Control) = t test (using non-split data)
+# Assumptions: Normality and Homogeneity of variance: levenes test must be non-significant
+
+T-TEST GROUPS=cohort_AD_control(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=SBP_65plus
+  /CRITERIA=CI(.95).
+
+#Individuals with AD did not have siginificantly higher late-life SBP compared to controls. 
+#p=0.326
+
+T-TEST GROUPS=cohort_AD_control(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=DBP_65plus
+  /CRITERIA=CI(.95).
+
+#Individuals with AD have SIGNIFICANTLY higher late-life DBP compared to controls (p<0.05). 
+
+#DBP AD = 81.82 ± 8.63
+#DBP Conrol = 78.17 ± 6.67
+#p=0.002
+#t(172)=-3.144
+
+#########################################################################################
+
+#2.3. Is there a sig association between HT and AD?
+
+#Assessing the relationship between two categorical variables = Chi squared test
+#assumptions?
+
+CROSSTABS
+  /TABLES=cohort_AD_control BY htn_rec
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ PHI 
+  /CELLS=COUNT ROW COLUMN TOTAL 
+  /COUNT ROUND CELL.
+
+#X(1) = 0.000, p=0.986
+#No statistically significant association between HT and AD 
+
+
+#########################################################################################
+
+#2.4. Is there a sig association between mid-life HT (yes or no) and AD?
+
+#Assessing the relationship between two categorical variables = Chi squared test
+
+CROSSTABS
+  /TABLES=cohort_AD_control BY htn_midlife_rec
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ PHI 
+  /CELLS=COUNT ROW COLUMN TOTAL 
+  /COUNT ROUND CELL.
+
+
+#X(1) = 2.088, p=0.148
+#No statistically significant association between mid-life HT and AD.
+
+
+#########################################################################################
+
+#2.5. Is there a sig association between mean mid-life SBP and mean mid-life DBP in AD vs Controls?
+
+#A binomial logistic regression, predicts the probability that an observation falls into one of 
+#two categories of a dichotomous dependent variable based on one or more independent variables that can be 
+#either continuous or categorical.
+
+#i.e. cohort_AD_control is the dependent variable
+
+#Logistic regression: single covariate or all at ones???
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER SBP_midlife_mean SBP_65plus DBP_midlife_mean DBP_65plus 
+  /CLASSPLOT
+  /CASEWISE OUTLIER(2)
+  /PRINT=GOODFIT SUMMARY
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+#M SBP = 0.987
+#L SBP = 0.015*
+#M DBP = 0.943
+#L DBP = 0.006*
+
+#The logistic regression model was statistically significant, χ2(4) = ?, p < 0.05. 
+#The model explained 16.8% (Nagelkerke R2) of the variance in heart disease 
+#and correctly classified 69.3% of cases.
+#Increasing L DBP was associated with an increased likelihood of AD,
+# but increasing L SBP was associated with a reduction in the likelihood of AD.
+
+#when separate then insig.?
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER SBP_midlife_mean SBP_65plus 
+  /CLASSPLOT
+  /CASEWISE OUTLIER(2)
+  /PRINT=GOODFIT SUMMARY
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER DBP_midlife_mean DBP_65plus 
+  /CLASSPLOT
+  /CASEWISE OUTLIER(2)
+  /PRINT=GOODFIT SUMMARY
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
