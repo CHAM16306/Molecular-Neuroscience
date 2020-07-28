@@ -562,6 +562,18 @@ NPAR TESTS
 
 #All non-sig. 
 
+#########################################################################################
+
+#Association between HT and infacts ever in life
+
+CROSSTABS
+  /TABLES=htn_rec BY Infarcts_any_rec
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ PHI 
+  /CELLS=COUNT ROW COLUMN TOTAL 
+  /COUNT ROUND CELL.
+
+#No significant association (p = 0.075)
 
 
 
