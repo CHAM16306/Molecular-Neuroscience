@@ -466,6 +466,31 @@ NPAR TESTS
 #Aβ load - parietal highest in norm (75.42) compared to HT (59.31)*
 #Tau load parietal, p=0.056 (highest in norm (57.95) compared to HT (45.95))*
 
+#########################################################################################
+
+#3.6. Assessing the relationship between HT and braak tangle stage
+
+#Chi squared test (association between two categorical variables)
+
+CROSSTABS
+  /TABLES=htn_rec BY braak_stage
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ PHI 
+  /CELLS=COUNT ROW COLUMN TOTAL 
+  /COUNT ROUND CELL.
+
+#No sig. association (p = 0.338)
+
+#Assessing the relationship between HT and braak tangle group
+
+CROSSTABS
+  /TABLES=htn_rec BY braak_group_rec
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ PHI 
+  /CELLS=COUNT ROW COLUMN TOTAL 
+  /COUNT ROUND CELL.
+
+#No sig. association (p = 0.615)
 
 #########################################################################################
 #########################################################################################
