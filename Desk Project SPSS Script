@@ -1,5 +1,8 @@
 * Encoding: UTF-8.
 
+
+###Current data set = DataSet4??
+
 DATASET ACTIVATE DataSet1.
 
 # Codebook to look at the data
@@ -50,6 +53,17 @@ EXECUTE.
 RECODE Infarcts_any ('1'=1) ('.'=0) 
 INTO Infarcts_any_rec.
 VARIABLE LABELS  Infarcts_any_rec 'Infarcts of any size'.
+EXECUTE.
+
+#recoding AHM data
+
+DATASET ACTIVATE DataSet4.
+RECODE AHT_anyreason ('No'=0) ('Yes'=1) INTO AHT_anyreason_rec.
+VARIABLE LABELS  AHT_anyreason_rec 'antihypertensives - any type for any reason'.
+EXECUTE.
+
+RECODE AHT_reason ('No AHT'=-1) ('AHT for HTN'=1) ('not for HTN'=0) INTO AHT_reason_rec.
+VARIABLE LABELS  AHT_reason_rec 'antihypertensives - reason if for/not for treatment of HTN'.
 EXECUTE.
 
 #########################################################################################
