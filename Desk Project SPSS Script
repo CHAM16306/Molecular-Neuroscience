@@ -210,10 +210,10 @@ T-TEST GROUPS=htn_rec(0 1)
 #########################################################################################
 #########################################################################################
 
-#Three-way crosstab for sex; AD/Control; HT/Norm
+#Four-way crosstab for sex; AD/Control; HT/Norm; AHT
 
 CROSSTABS
-  /TABLES=cohort_AD_control BY htn_rec BY sex_rec
+  /TABLES=  cohort_AD_control BY sex_rec BY AHT_anyreason_rec BY htn_rec 
   /FORMAT=AVALUE TABLES
   /STATISTICS=CHISQ 
   /CELLS=COUNT
@@ -230,6 +230,16 @@ SPLIT FILE LAYERED BY htn_rec cohort_AD_control.
 FREQUENCIES VARIABLES=PMDELAY AGE
   /FORMAT=NOTABLE
   /STATISTICS=STDDEV MINIMUM MAXIMUM MEAN MEDIAN
+  /ORDER=ANALYSIS.
+
+#AHM: mean age and PMD
+
+DATASET ACTIVATE DataSet1.
+SORT CASES  BY htn_rec AHT_anyreason_rec.
+SPLIT FILE LAYERED BY htn_rec AHT_anyreason_rec.
+
+FREQUENCIES VARIABLES=AGE PMDELAY
+  /STATISTICS=STDDEV MEAN MEDIAN
   /ORDER=ANALYSIS.
 
 #########################################################################################
