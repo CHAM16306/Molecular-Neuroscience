@@ -587,8 +587,9 @@ NPAR TESTS
 #All non-sig. 
 
 #########################################################################################
+#########################################################################################
 
-#Association between HT and infacts ever in life
+#?Association between HT and infacts ever in life
 
 CROSSTABS
   /TABLES=htn_rec BY Infarcts_any_rec
@@ -600,6 +601,159 @@ CROSSTABS
 #No significant association (p = 0.075)
 
 
+#??
+
+
+LOGISTIC REGRESSION VARIABLES htn_rec
+  /METHOD=ENTER Infarcts_any_rec 
+  /CONTRAST (Infarcts_any_rec)=Indicator
+  /CLASSPLOT
+  /CASEWISE OUTLIER(2)
+  /PRINT=GOODFIT SUMMARY
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+
+#########################################################################################
+#########################################################################################
+
+#?Association between markers of brain hypoperfusion etc and AD
+
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER FGA_Hb_fcx FGA_Hb_fwm FGA_Hb_pcx FGA_Hb_pwm PDGFRB_fcx2 PDGFRB_fwm2 PDGFRB_pccx2 
+    PDGFRB_pcwm2 VEGF_fcx2 VEGF_fwm2 VEGF_pccx2 VEGF_pcwm2 
+  /CLASSPLOT
+  /CASEWISE OUTLIER(2)
+  /PRINT=GOODFIT SUMMARY
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+#The logistic regression model was statistically significant, χ2(12) = ?, p=0.000??. 
+#The model explained 32.4% (Nagelkerke R2) of the variance in heart disease and correctly classified 72.8% of cases.
+
+#Increasing Hb_fcx (p = 0.001*) was associated with an increased likelihood of AD? (Exp(B)=1.000)
+#Increasing Hb_pcx (p = 0.039*) was associated with an increased likelihood of AD? (Exp(B)=1.000)
+#Increasing Hb_fwm (p = 0.044*) was associated with an increased likelihood of AD? (Exp(B)=1.000)
+#Increasing PDGFRB_fwm (p = 0.001*) was associated with an increased likelihood of AD? (Exp(B)=1.031)
+#Increasing PDGFRB_pwm (p = 0.025*) was associated with an *reduced* likelihood of AD? (Exp(B)=0.997)
+#Increasing VEGF-A_fwm (p = 0.032*) was associated with an increased likelihood of AD? (Exp(B)=1.001)
+
+#########################################################################################
+#########################################################################################
+
+#TASK 6: Is there a relationship between AHM and AD?
+
+#########################################################################################
+#########################################################################################
+
+#6.1. Assessing the relationship between any AHM and AD
+
+DATASET ACTIVATE DataSet1.
+
+CROSSTABS
+  /TABLES=AHT_anyreason_rec BY cohort_AD_control
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ 
+  /CELLS=COUNT ROW ASRESID 
+  /COUNT ROUND CELL
+  /BARCHART.
+
+#Standardised residuals ~ z scores, if greater than 1.96 the statistically significant
+
+#statistically significant association between AHT and AD
+#X(1) = 44.014, p = 0.000
+#No AHT: 21.92% Control and 78.08% AD
+#AHT: 70.64% Control abd 19.37% AD 
+
+#Odds Ratio
+
+#########################################################################################
+
+#6.2. Comparing mean BP between any AHM and no AHM
+
+T-TEST GROUPS=AHT_anyreason_rec(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=DBP_65plus DBP_midlife_mean SBP_65plus SBP_midlife_mean
+  /CRITERIA=CI(.95).
+
+#Levenes sig, so equal variances not assumed:
+#Late-life DBP sig. lower if AHM (79.31 ± 7.76 vs 81.87 ± 8.81) (p=0.041)
+
+#Levenes non sig.
+#No sig. differences between L SBP, M DBP and M SBP when AHT or not.
+
+#########################################################################################
+
+#6.3. Assessing the relationship between any non-diuretic AHM and AD
+
+CROSSTABS
+  /TABLES=AHT_nondiuretic BY cohort_AD_control
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ 
+  /CELLS=COUNT ROW ASRESID 
+  /COUNT ROUND CELL
+  /BARCHART.
+
+#statistically significant association
+#X(1) = 46.736, p = 0.000
+#No non-diuretic: 30.6 % Control and 69.4 % AD
+#non-diuretic: 79.1 % Control and 20.9 % AD 
+
+#########################################################################################
+
+#6.4. Assessing the relationship between any ACEI/ARB and AD
+
+CROSSTABS
+  /TABLES=ACEI_ARB BY cohort_AD_control
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ 
+  /CELLS=COUNT ROW ASRESID 
+  /COUNT ROUND CELL
+  /BARCHART.
+
+#statistically significant association
+#X(1) = 27.387, p = 0.000
+#No: 41.9 % Control and 58.1 % AD
+#Yes: 84.3 % Control and 15.7 % AD 
+
+#########################################################################################
+
+#6.4. Comparing mean BP between non-diuretic/ACEI-ARB AHM and no AHM
+
+
+T-TEST GROUPS=AHT_nondiuretic(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=DBP_65plus DBP_midlife_mean SBP_65plus SBP_midlife_mean
+  /CRITERIA=CI(.95).
+
+#Late-life SBP sig. higher when taking non-diuretic AHM (p=0.006)
+
+T-TEST GROUPS=ACEI_ARB(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=DBP_65plus DBP_midlife_mean SBP_65plus SBP_midlife_mean
+  /CRITERIA=CI(.95).
+
+#No sig. differences in BP when taking ACEI/ARB
+
+#########################################################################################
+
+#6.5. Model of effect of different types of AHM on risk of AD
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER ACEI_ARB AHT_anyreason_rec AHT_nondiuretic 
+  /CONTRAST (ACEI_ARB)=Indicator
+  /CONTRAST (AHT_anyreason_rec)=Indicator
+  /CONTRAST (AHT_nondiuretic)=Indicator
+  /CLASSPLOT
+  /CASEWISE OUTLIER(2)
+  /PRINT=GOODFIT CI(95)
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+#The logistic regression model was statistically significant, χ2(3) = ?, p < 0.05. 
+#The model explained 34.1 %  (Nagelkerke R2) of the variance in heart disease and correctly classified 73.9 % of cases.
+#Odds of having AD is 3.365 times greater when taking any AHT compared to none (p=0.006)
+#Odds of having AD is 2.791 times greater when taking non-diuretic AHT compared to none (p=0.036)
+
+#Analysis wrong???
 
 
 
