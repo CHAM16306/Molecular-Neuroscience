@@ -1,0 +1,509 @@
+* Encoding: UTF-8.
+
+DATASET ACTIVATE DataSet1.
+
+#D1 = non-split
+#D2 = split by HT and AD
+#D3 = split by HT and AHM
+#D4 = split by AD and AHM
+#D5 = split by AD only
+
+# Codebook to look at the data
+
+CODEBOOK  [n]
+  /VARINFO POSITION LABEL TYPE FORMAT MEASURE ROLE VALUELABELS MISSING ATTRIBUTES
+  /OPTIONS VARORDER=VARLIST SORT=ASCENDING MAXCATS=200
+  /STATISTICS COUNT PERCENT MEAN STDDEV QUARTILES.
+
+#########################################################################################
+
+# Recoding unto binary variables (Transform -> Recode into different variables)
+
+RECODE SEX ('F'=1) ('M'=0) INTO sex_rec.
+VARIABLE LABELS  sex_rec 'sex_rec'.
+EXECUTE.
+
+RECODE cohort_htn ('1. Control'=0) ('2. AD'=1) ('3. Mixed'=-1) ('4. VaD'=-2) 
+INTO cohort_rec.
+VARIABLE LABELS cohort_rec 'Hypertension cohort group_rec'.
+EXECUTE.
+
+RECODE htn ('No'=0) ('Yes'=1) 
+INTO htn_rec.
+VARIABLE LABELS  htn_rec 'Hypertension ever in life'.
+EXECUTE.
+
+RECODE htn_diag ('No'=0) ('Yes'=1) 
+INTO htn_diag_rec.
+VARIABLE LABELS  htn_diag_rec 'Hypertension diagnosed clinically during life'.
+EXECUTE.
+
+RECODE htn_midlife ('No'=0) ('Yes'=1) 
+INTO htn_midlife_rec.
+VARIABLE LABELS  htn_midlife_rec 'Hypertension in midlife'.
+EXECUTE.
+
+RECODE latelife_bp ('No'=0) ('Yes'=1) 
+INTO latelife_bp_rec.
+VARIABLE LABELS  latelife_bp_rec 'Late-life bp measurements'.
+EXECUTE.
+
+RECODE braak_group ('0-II'=0) ('III-IV'=1) ('V-VI'=2) 
+INTO braak_group_rec.
+VARIABLE LABELS  braak_group_rec 'Braak stage group (0-II, III-IV, V-VI)'.
+EXECUTE.
+
+RECODE Infarcts_any ('1'=1) ('.'=0) 
+INTO Infarcts_any_rec.
+VARIABLE LABELS  Infarcts_any_rec 'Infarcts of any size'.
+EXECUTE.
+
+#recoding AHM data
+
+DATASET ACTIVATE DataSet4.
+RECODE AHT_anyreason ('No'=0) ('Yes'=1) INTO AHT_anyreason_rec.
+VARIABLE LABELS  AHT_anyreason_rec 'antihypertensives - any type for any reason'.
+EXECUTE.
+
+RECODE AHT_reason ('No AHT'=-1) ('AHT for HTN'=1) ('not for HTN'=0) INTO AHT_reason_rec.
+VARIABLE LABELS  AHT_reason_rec 'antihypertensives - reason if for/not for treatment of HTN'.
+EXECUTE.
+
+#########################################################################################
+#########################################################################################
+
+#TASK 1: Summary demographic and neuropathological data of the hypertensive and normotensive AD brains
+
+#########################################################################################
+#########################################################################################
+
+#Four-way crosstab for sex; AD/Control; HT/Norm; AHT (non-split data)
+
+CROSSTABS
+  /TABLES=  cohort_AD_control BY sex_rec BY AHT_anyreason_rec BY htn_rec 
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ 
+  /CELLS=COUNT
+  /COUNT ROUND CELL
+  /BARCHART.
+
+#To compare HT and conrtol mean age and mean PMD need to split data set (Data->Split Data->htn_rec&cohort_AD_Control)
+
+#PMDELAY and age for HT vs norm and AD vs control split file
+
+DATASET ACTIVATE DataSet2.
+#Split by HT and AD
+
+SORT CASES  BY htn_rec cohort_AD_control.
+SPLIT FILE LAYERED BY htn_rec cohort_AD_control.
+FREQUENCIES VARIABLES=PMDELAY AGE
+  /FORMAT=NOTABLE
+  /STATISTICS=STDDEV MINIMUM MAXIMUM MEAN MEDIAN
+  /ORDER=ANALYSIS.
+
+#PMDELAY and age for HT vs norm and Treated vs untreated split file
+
+DATASET ACTIVATE DataSet3.
+#Split by HT and AHT
+
+SORT CASES  BY htn_rec AHT_anyreason_rec.
+SPLIT FILE LAYERED BY htn_rec AHT_anyreason_rec.
+FREQUENCIES VARIABLES=AGE PMDELAY
+  /STATISTICS=STDDEV MEAN MEDIAN
+  /ORDER=ANALYSIS.
+
+
+#########################################################################################
+#########################################################################################
+
+#TASK 2: Is there an association between midlife or late-life SBP/DBP and AD?
+
+#########################################################################################
+#########################################################################################
+
+#2.1. Tests of association:
+
+#2.1.1.  Is there an overall association between HT and AD?
+
+#Assessing the relationship between two categorical variables = Chi squared test
+
+CROSSTABS
+  /TABLES=cohort_AD_control BY htn_rec
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ PHI 
+  /CELLS=COUNT ROW COLUMN TOTAL 
+  /COUNT ROUND CELL.
+
+#X(1) = 0.000, p=0.986
+#No statistically significant association between HT and AD 
+
+#2.1.2. Is there a sig association between overall mid-life HT and AD?
+
+CROSSTABS
+  /TABLES=cohort_AD_control BY htn_midlife_rec
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ PHI 
+  /CELLS=COUNT ROW COLUMN TOTAL 
+  /COUNT ROUND CELL.
+
+#X(1) = 2.088, p=0.148
+#No statistically significant association between mid-life HT and AD.
+
+#2.1.3. Is there a association between mean mid-life SBP and mean mid-life DBP in AD vs Controls?
+
+#A binomial logistic regression, predicts the probability that an observation falls into one of 
+#two categories of a dichotomous dependent variable based on one or more independent variables that can be 
+#either continuous or categorical.
+#i.e. cohort_AD_control is the dependent variable
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER SBP_midlife_mean
+  /CLASSPLOT
+  /CASEWISE OUTLIER(2)
+  /PRINT=GOODFIT SUMMARY
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER DBP_midlife_mean
+  /CLASSPLOT
+  /CASEWISE OUTLIER(2)
+  /PRINT=GOODFIT SUMMARY
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER SBP_65plus
+  /CLASSPLOT
+  /CASEWISE OUTLIER(2)
+  /PRINT=GOODFIT SUMMARY
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER DBP_65plus 
+  /CLASSPLOT
+  /CASEWISE OUTLIER(2)
+  /PRINT=GOODFIT SUMMARY
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+#No statistically significant association between mid-life SBP/DBP or late-life SBP and AD.
+
+#Sig. association between late-life DBP and AD 
+#p = 0.003. 
+#The model explained 7.3 % (Nagelkerke R2) of the variance in AD and correctly classified 62.1 % of cases.
+#Increasing L DBP was associated with an increased presence of AD.
+#See single comparison tests for further information
+
+#########################################################################################
+
+#2.2. Single comparison tests
+
+# 2.2.1. Is there a significant difference between mean mid-life SBP and mean mid-life DBP in AD vs Controls?
+
+DATASET ACTIVATE DataSet1.
+# Originial, non-split
+
+# Comparing the means of two independent groups (AD vs Control) = t test (using non-split data) or non-paramentric alternative
+# Assumptions: Normality 
+# Shapiro-Wilk test as our numerical means of assessing normality (or hist or qqplot)
+#Data normally distributed if Shapiro test not sig.
+#Assumption of homogeneity of variance: levenes test must be non-significant
+
+EXAMINE VARIABLES=SBP_midlife_mean SBP_65plus DBP_midlife_mean DBP_65plus
+  /PLOT BOXPLOT STEMLEAF NPPLOT
+  /COMPARE GROUPS
+  /STATISTICS DESCRIPTIVES
+  /CINTERVAL 95
+  /MISSING LISTWISE
+  /NOTOTAL.
+
+# Mid-life SBP/DBP and late-life SBP normally distributed -> Independent samples t test
+#Late-life DBP not normally distributed -> Mann-Whitney test 
+
+T-TEST GROUPS=cohort_AD_control(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=SBP_midlife_mean
+  /CRITERIA=CI(.95).
+
+#Levenes non sig.
+#p=0.904
+
+T-TEST GROUPS=cohort_AD_control(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=DBP_midlife_mean
+  /CRITERIA=CI(.95).
+
+#Levenes non sig.
+#p=0.901
+
+T-TEST GROUPS=cohort_AD_control(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=SBP_65plus
+  /CRITERIA=CI(.95).
+
+#Levenes non sig.
+#p=0.326
+
+#Assumption for Mann-Whitney U test: equal shape distributions of the dependent variable
+#test of homogeneity of variance (same for kruskal wallis) as follows:
+
+EXAMINE VARIABLES=DBP_65plus BY cohort_AD_control
+  /PLOT BOXPLOT STEMLEAF SPREADLEVEL(1)
+  /COMPARE GROUPS
+  /STATISTICS DESCRIPTIVES
+  /CINTERVAL 95
+  /MISSING LISTWISE
+  /NOTOTAL.
+
+#Based on Median and with adjusted df: not sig. 
+#Thus assumption met (equal distribution) and are able to use Mann U test
+
+NPAR TESTS
+  /M-W= DBP_65plus BY cohort_AD_control(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#p=0.015*
+
+#Individuals with AD have SIGNIFICANTLY higher late-life DBP compared to controls (p<0.05). 
+#Mean rank AD = 98.05
+#Mean rand Control = 79.32
+# (U = 2922.500, p = .015).
+
+#Look at AHM to explain this finding.
+
+
+#########################################################################################
+#########################################################################################
+
+#TASK 3: Relationship between AD and AHM
+
+#########################################################################################
+#########################################################################################
+
+#3.1. Is HT more common in AD than in Controls?
+
+DATASET ACTIVATE DataSet1.
+CROSSTABS
+  /TABLES=cohort_AD_control BY htn_rec
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ 
+  /CELLS=COUNT ROW PROP 
+  /COUNT ROUND CELL
+  /BARCHART.
+
+#80.9 % of AD cases had HT
+#81 % of Controls had HT
+#Thus, similar amout of HT among AD and Controls.
+
+
+#3.2. Is HT more likely to be treated in Control than AD?
+
+CROSSTABS
+  /TABLES= cohort_AD_control BY AHT_anyreason_rec
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ 
+  /CELLS=COUNT ROW PROP 
+  /COUNT ROUND CELL
+  /BARCHART.
+
+#Χ2(1)= 44.014, p = 0.000.
+#Significant association was found between AD and AHT_anyreason.
+#84.8 % of Control individuals receive AHT 
+#39.4 % of AD indivuals receive AHT.
+#Thus, Controls are more likely to receive AHT than individuals with AD.
+
+
+DATASET ACTIVATE DataSet5.
+#Split by AD only
+
+SORT CASES  BY cohort_AD_control.
+SPLIT FILE LAYERED BY cohort_AD_control.
+
+CROSSTABS
+  /TABLES= htn_rec BY AHT_anyreason_rec
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ 
+  /CELLS=COUNT ROW PROP 
+  /COUNT ROUND CELL
+  /BARCHART.
+
+#Of the AD cases with HT, 42.1 % receive AHT.
+#Of the Control cases with HT, 87.8 % receive AHT.
+#Of hypertensive cases, Controls are more likely to receive AHT than individuals with AD.
+
+#3.3. Is there a difference in mean late-life DBP in treated vs untreatd AD cases?
+
+DATASET ACTIVATE DataSet4.
+#Split by AD and AHT
+
+SORT CASES  BY cohort_AD_control AHT_anyreason_rec.
+SPLIT FILE LAYERED BY cohort_AD_control AHT_anyreason_rec.
+FREQUENCIES VARIABLES=DBP_65plus
+   /STATISTICS=STDDEV MEAN MEDIAN
+  /ORDER=ANALYSIS.
+
+#Late-life DBP in AD with AHM = 80.33  ± 8.642
+#Late-life DBP in AD without AHM = 83.15  ± 8.499
+
+#In conclusion, HT is less likely to be treated in AD than in Controls and thus late-life DBP is higher in AD than in Controls.
+
+
+#########################################################################################
+
+#3.2. Is HT more likely to be treated in Control than AD?
+
+DATASET ACTIVATE DataSet1.
+#Original, non-split
+
+CROSSTABS
+  /TABLES= cohort_AD_control BY AHT_anyreason_rec
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ 
+  /CELLS=COUNT ROW PROP 
+  /COUNT ROUND CELL
+  /BARCHART.
+
+#Χ2(1)= 44.014, p = 0.000.
+#Significant association was found between AD and AHT_anyreason.
+#84.8 % of Control individuals receive AHT 
+#39.4 % of AD indivuals receive AHT.
+#Thus, Controls are more likely to receive AHT than individuals with AD.
+
+CROSSTABS
+  /TABLES= cohort_AD_control BY AHT_nondiuretic
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ 
+  /CELLS=COUNT ROW PROP 
+  /COUNT ROUND CELL
+  /BARCHART.
+
+#X(1) = 46.736, p = 0.000
+#Significant association was found between AD and AHT_nondiuretic.
+#68.6 % % of Control individuals receive non-diuretic AHT 
+#20.2 % of AD indivuals receive non-diuretic AHT.
+#Thus, Controls are more likely to receive non-diuretic AHT than individuals with AD.
+
+CROSSTABS
+  /TABLES=cohort_AD_control BY ACEI_ARB 
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ 
+  /CELLS=COUNT ROW PROP 
+  /COUNT ROUND CELL
+  /BARCHART.
+
+#X(1) = 27.387, p = 0.000
+#Significant association was found between AD and ACEI_ARB.
+#41.1 % of Control individuals receive AHT 
+#8.5 % of AD indivuals receive AHT.
+#Thus, Controls are more likely to receive ACEI_ARB than individuals with AD.
+
+#Prestenation: include final contingency table (with frequencies and row percentages) in the report (pivot tray to make it look prettier)
+
+#########################################################################################
+
+# Bc of sig. association between AHT and AD:
+# Were the AD group more likely to have donated their brain in an earlier time when HT was less likely to be treated appropriately? 
+
+DATASET ACTIVATE DataSet5.
+#Split by AD only
+
+DESCRIPTIVES VARIABLES=year_death
+  /STATISTICS=MEAN STDDEV MIN MAX.
+
+#AD: year of death mean = 2001.64 ± 8.28
+#Control: year of death mean = 2006.85 ± 11.41
+
+DATASET ACTIVATE DataSet1.
+#Original, non-split
+
+NPAR TESTS
+  /M-W= year_death BY cohort_AD_control(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#U = 3242, p = 0.000
+#Control group sig. later year if death than AD group
+
+#########################################################################################
+
+#Test of association:
+#Model of effect of different types of AHM on risk of AD
+
+DATASET ACTIVATE DataSet1.
+#Original, non-split
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER AHT_anyreason_rec 
+  /CONTRAST (AHT_anyreason_rec)=Indicator
+  /CLASSPLOT
+  /PRINT=CORR CI(95)
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+# χ2(1) = 44.014, p = 0.000. 
+# Exp(B) = 8.569
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER AHT_nondiuretic 
+  /CONTRAST (AHT_nondiuretic)=Indicator
+  /CLASSPLOT
+  /PRINT=CORR CI(95)
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+# χ2(1) = 46.74, p = 0.000. 
+# Exp(B) = 8.612
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER ACEI_ARB 
+/CONTRAST (ACEI_ARB)=Indicator
+  /CLASSPLOT
+  /PRINT=CORR CI(95)
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+# χ2(1) = 27.387, p = 0.000. 
+# Exp(B) = 7.456
+
+#########################################################################################
+
+#Test of association:
+#Model of effect of different types of AHM on risk of AD in HT individuals only
+
+DATASET ACTIVATE DataSet6.
+#Split by HT only
+
+SORT CASES  BY htn_rec .
+SPLIT FILE LAYERED BY htn_rec.
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER AHT_anyreason_rec 
+  /CONTRAST (AHT_anyreason_rec)=Indicator
+  /CLASSPLOT
+  /PRINT=CORR CI(95)
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+# HT: χ2(1) = 36.05, p = 0.000; Exp(B) = 7.800
+# Norm: χ2(1) = 8.47, p = 0.005; Exp(B) = 9.250
+
+#Within both groups, AHT more likely to have resulted in AD?????
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER AHT_nondiuretic 
+  /CONTRAST (AHT_nondiuretic)=Indicator
+  /CLASSPLOT
+  /PRINT=CORR CI(95)
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+# HT: χ2(1) = 42.600, p = 0.000; Exp(B) = 9.75
+# Norm: χ2(1) = 7.723, p = 0.999; non. sig.
+
+#Within the HT group, non-diuretic AHT more likely to have resulted in AD?????
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER ACEI_ARB 
+/CONTRAST (ACEI_ARB)=Indicator
+  /CLASSPLOT
+  /PRINT=CORR CI(95)
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+# HT: χ2(1) = 24.265, p = 0.000; Exp(B) = 7.207
+# Norm: χ2(1) = 4.024, p = 0.999; non-sig.
+
+#Within the HT group, ACEI_ARB treatment more likely to have resulted in AD?????
