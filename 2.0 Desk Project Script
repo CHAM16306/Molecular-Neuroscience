@@ -507,3 +507,120 @@ LOGISTIC REGRESSION VARIABLES cohort_AD_control
 # Norm: χ2(1) = 4.024, p = 0.999; non-sig.
 
 #Within the HT group, ACEI_ARB treatment more likely to have resulted in AD?????
+
+#########################################################################################
+
+#6.2. Comparing mean BP between any AHM and no AHM
+
+DATASET ACTIVATE DataSet1.
+# Originial, non-split
+
+# Comparing the means of two independent groups (AD vs Control) = t test (using non-split data) or non-paramentric alternative
+# Assumptions: Normality 
+# Shapiro-Wilk test as our numerical means of assessing normality (or hist or qqplot)
+#Data normally distributed if Shapiro test not sig.
+#Assumption of homogeneity of variance: levenes test must be non-significant
+
+EXAMINE VARIABLES=SBP_midlife_mean SBP_65plus DBP_midlife_mean DBP_65plus
+  /PLOT BOXPLOT STEMLEAF NPPLOT
+  /COMPARE GROUPS
+  /STATISTICS DESCRIPTIVES
+  /CINTERVAL 95
+  /MISSING LISTWISE
+  /NOTOTAL.
+
+# Mid-life SBP/DBP and late-life SBP normally distributed -> Independent samples t test
+#Late-life DBP not normally distributed -> Mann-Whitney test 
+
+T-TEST GROUPS=AHT_anyreason_rec(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=SBP_midlife_mean
+  /CRITERIA=CI(.95).
+
+#Levenes non sig.
+#p=non sig.
+
+T-TEST GROUPS=AHT_anyreason_rec(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=DBP_midlife_mean
+  /CRITERIA=CI(.95).
+
+#Levenes non sig.
+#p=0.901
+
+T-TEST GROUPS=AHT_anyreason_rec(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=SBP_65plus
+  /CRITERIA=CI(.95).
+
+#Levenes non sig.
+#p= non sig.
+
+#Assumption for Mann-Whitney U test: equal shape distributions of the dependent variable
+#test of homogeneity of variance (same for kruskal wallis) as follows:
+
+EXAMINE VARIABLES=DBP_65plus BY AHT_anyreason_rec
+  /PLOT BOXPLOT STEMLEAF SPREADLEVEL(1)
+  /COMPARE GROUPS
+  /STATISTICS DESCRIPTIVES
+  /CINTERVAL 95
+  /MISSING LISTWISE
+  /NOTOTAL.
+
+#Based on Median and with adjusted df: not sig. 
+#Thus assumption met (equal distribution) and are able to use Mann U test
+
+NPAR TESTS
+  /M-W= DBP_65plus BY AHT_anyreason_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#p=0.046*
+
+#Late-life DBP sig. lower if AHM compared to no AHM . 
+#Mean rank AD = 107.32
+#Mean rand Control = 126.12
+# (U = 4446.000, p = .046).
+
+
+#Repeat this but exclusively in AD group:
+
+DATASET ACTIVATE DataSet5.
+# Split by AD only
+
+T-TEST GROUPS=AHT_anyreason_rec(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=SBP_midlife_mean
+  /CRITERIA=CI(.95).
+
+#Levenes non sig.
+#Control: p=0.039
+#Witin the control group, mid-life SBP higher when taking AHM ???
+
+T-TEST GROUPS=AHT_anyreason_rec(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=DBP_midlife_mean
+  /CRITERIA=CI(.95).
+
+#Levenes non sig.
+#Control: p=0.030
+#Witin the control group, mid-life SBP higher when taking AHM ???
+
+T-TEST GROUPS=AHT_anyreason_rec(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=SBP_65plus
+  /CRITERIA=CI(.95).
+
+#Levenes non sig.
+#All non sig.
+
+NPAR TESTS
+  /M-W= DBP_65plus BY AHT_anyreason_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#All non sig.
+
+#AD (U = 548.500, p = 0.074)
+
+
