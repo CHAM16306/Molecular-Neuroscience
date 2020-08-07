@@ -19,6 +19,8 @@ CODEBOOK  [n]
 
 # Recoding unto binary variables (Transform -> Recode into different variables)
 
+DATASET ACTIVATE DataSet1
+
 RECODE SEX ('F'=1) ('M'=0) INTO sex_rec.
 VARIABLE LABELS  sex_rec 'sex_rec'.
 EXECUTE.
@@ -69,6 +71,10 @@ RECODE AHT_reason ('No AHT'=-1) ('AHT for HTN'=1) ('not for HTN'=0) INTO AHT_rea
 VARIABLE LABELS  AHT_reason_rec 'antihypertensives - reason if for/not for treatment of HTN'.
 EXECUTE.
 
+RECODE SVD_frontal SVD_parietal CAA_frontal CAA_parietal (0=0) (1=1) (2=1) (3=1) INTO 
+    SVD_frontal_rec SVD_parietal_rec CAA_frontal_rec CAA_parietal_rec.
+EXECUTE.
+
 #########################################################################################
 #########################################################################################
 
@@ -78,6 +84,8 @@ EXECUTE.
 #########################################################################################
 
 #Four-way crosstab for sex; AD/Control; HT/Norm; AHT (non-split data)
+
+DATASET ACTIVATE DataSet1
 
 CROSSTABS
   /TABLES=  cohort_AD_control BY sex_rec BY AHT_anyreason_rec BY htn_rec 
@@ -112,6 +120,24 @@ FREQUENCIES VARIABLES=AGE PMDELAY
   /STATISTICS=STDDEV MEAN MEDIAN
   /ORDER=ANALYSIS.
 
+#########################################################################################
+
+3.1. Is HT more common in AD than in Controls?
+
+DATASET ACTIVATE DataSet1
+.
+CROSSTABS
+  /TABLES=cohort_AD_control BY htn_rec
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ 
+  /CELLS=COUNT ROW PROP 
+  /COUNT ROUND CELL
+  /BARCHART.
+
+#80.9 % of AD cases had HT
+#81 % of Controls had HT
+#Thus, similar amout of HT among AD and Controls.
+
 
 #########################################################################################
 #########################################################################################
@@ -126,6 +152,8 @@ FREQUENCIES VARIABLES=AGE PMDELAY
 #2.1.1.  Is there an overall association between HT and AD?
 
 #Assessing the relationship between two categorical variables = Chi squared test
+
+DATASET ACTIVATE DataSet1
 
 CROSSTABS
   /TABLES=cohort_AD_control BY htn_rec
@@ -279,128 +307,432 @@ NPAR TESTS
 #########################################################################################
 #########################################################################################
 
-#3.1. Is HT more common in AD than in Controls?
+#Association between AHM and AD
 
 DATASET ACTIVATE DataSet1.
-CROSSTABS
-  /TABLES=cohort_AD_control BY htn_rec
-  /FORMAT=AVALUE TABLES
-  /STATISTICS=CHISQ 
-  /CELLS=COUNT ROW PROP 
-  /COUNT ROUND CELL
-  /BARCHART.
-
-#80.9 % of AD cases had HT
-#81 % of Controls had HT
-#Thus, similar amout of HT among AD and Controls.
-
-
-#3.2. Is HT more likely to be treated in Control than AD?
 
 CROSSTABS
-  /TABLES= cohort_AD_control BY AHT_anyreason_rec
+  /TABLES=AHT_anyreason_rec BY cohort_AD_control
   /FORMAT=AVALUE TABLES
   /STATISTICS=CHISQ 
-  /CELLS=COUNT ROW PROP 
+  /CELLS=COUNT ROW ASRESID 
   /COUNT ROUND CELL
   /BARCHART.
 
 #Χ2(1)= 44.014, p = 0.000.
 #Significant association was found between AD and AHT_anyreason.
-#84.8 % of Control individuals receive AHT 
-#39.4 % of AD indivuals receive AHT.
-#Thus, Controls are more likely to receive AHT than individuals with AD.
-
-
-DATASET ACTIVATE DataSet5.
-#Split by AD only
-
-SORT CASES  BY cohort_AD_control.
-SPLIT FILE LAYERED BY cohort_AD_control.
+#Of cases not treated with any AHM, 78.08 % had AD.
+#Of cases  treated with any AHM, 29.37 % had AD.
 
 CROSSTABS
-  /TABLES= htn_rec BY AHT_anyreason_rec
+  /TABLES=AHT_nondiuretic BY cohort_AD_control
   /FORMAT=AVALUE TABLES
   /STATISTICS=CHISQ 
-  /CELLS=COUNT ROW PROP 
+  /CELLS=COUNT ROW ASRESID 
   /COUNT ROUND CELL
   /BARCHART.
 
-#Of the AD cases with HT, 42.1 % receive AHT.
-#Of the Control cases with HT, 87.8 % receive AHT.
-#Of hypertensive cases, Controls are more likely to receive AHT than individuals with AD.
+#statistically significant association
+#X(1) = 46.736, p = 0.000
+#Of cases not treated with non-diuretic AHM, 69.44 % had AD.
+#Of cases  treated with non-diuretic AHM, 20.88 % had AD.
 
-#3.3. Is there a difference in mean late-life DBP in treated vs untreatd AD cases?
+CROSSTABS
+  /TABLES=ACEI_ARB BY cohort_AD_control
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ 
+  /CELLS=COUNT ROW ASRESID 
+  /COUNT ROUND CELL
+  /BARCHART.
 
-DATASET ACTIVATE DataSet4.
-#Split by AD and AHT
+#statistically significant association
+#X(1) = 27.387, p = 0.000
+#Of cases not treated with ACEI/ARB, 58.11 % had AD.
+#Of cases  treated with ACEI/ARB, 15.69 % had AD.
 
-SORT CASES  BY cohort_AD_control AHT_anyreason_rec.
-SPLIT FILE LAYERED BY cohort_AD_control AHT_anyreason_rec.
-FREQUENCIES VARIABLES=DBP_65plus
-   /STATISTICS=STDDEV MEAN MEDIAN
-  /ORDER=ANALYSIS.
 
-#Late-life DBP in AD with AHM = 80.33  ± 8.642
-#Late-life DBP in AD without AHM = 83.15  ± 8.499
+DATASET ACTIVATE DataSet6.
+#Split by htn_rec only
 
-#In conclusion, HT is less likely to be treated in AD than in Controls and thus late-life DBP is higher in AD than in Controls.
+SORT CASES  BY htn_rec.
+SPLIT FILE LAYERED BY htn_rec.
 
+DATASET ACTIVATE DataSet1.
+
+CROSSTABS
+  /TABLES=AHT_anyreason_rec BY cohort_AD_control
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ 
+  /CELLS=COUNT ROW ASRESID 
+  /COUNT ROUND CELL
+  /BARCHART.
+
+#Χ2(1)= 36.051, p = 0.000.
+#Significant association was found between AD and AHT_anyreason.
+#Of HT cases not treated with any AHM, 80 % had AD.
+#Of HT cases treated with any AHM, 30.19 % had AD.
+
+CROSSTABS
+  /TABLES=AHT_nondiuretic BY cohort_AD_control
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ 
+  /CELLS=COUNT ROW ASRESID 
+  /COUNT ROUND CELL
+  /BARCHART.
+
+#statistically significant association
+#X(1) = 42.600, p = 0.000
+#Untreated: 74.03 % AD
+#Treated: 22.62 % AD 
+
+CROSSTABS
+  /TABLES=ACEI_ARB BY cohort_AD_control
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ 
+  /CELLS=COUNT ROW ASRESID 
+  /COUNT ROUND CELL
+  /BARCHART.
+
+#statistically significant association
+#X(1) = 24.265, p = 0.000
+#Untreated: 59.65 % AD
+#Treated: 17.02 % AD 
 
 #########################################################################################
 
-#3.2. Is HT more likely to be treated in Control than AD?
+3.2. Is HT more likely to be treated in Control than AD?
 
-DATASET ACTIVATE DataSet1.
-#Original, non-split
+DATASET ACTIVATE DataSet6.
+#Split by htn_rec only
+
+SORT CASES  BY htn_rec.
+SPLIT FILE LAYERED BY htn_rec.
 
 CROSSTABS
   /TABLES= cohort_AD_control BY AHT_anyreason_rec
   /FORMAT=AVALUE TABLES
-  /STATISTICS=CHISQ 
+    /STATISTICS=CHISQ 
   /CELLS=COUNT ROW PROP 
   /COUNT ROUND CELL
   /BARCHART.
 
-#Χ2(1)= 44.014, p = 0.000.
-#Significant association was found between AD and AHT_anyreason.
-#84.8 % of Control individuals receive AHT 
-#39.4 % of AD indivuals receive AHT.
-#Thus, Controls are more likely to receive AHT than individuals with AD.
+#Within HT cases, significant association between AHM and AD (X2(1) = 36.051, p = 0.000).
+#Of the AD cases with HT, 42.11 % receive AHT.
+#Of the Control cases with HT, 87.06 % receive AHT.
 
 CROSSTABS
   /TABLES= cohort_AD_control BY AHT_nondiuretic
   /FORMAT=AVALUE TABLES
-  /STATISTICS=CHISQ 
+    /STATISTICS=CHISQ 
   /CELLS=COUNT ROW PROP 
   /COUNT ROUND CELL
   /BARCHART.
 
-#X(1) = 46.736, p = 0.000
-#Significant association was found between AD and AHT_nondiuretic.
-#68.6 % % of Control individuals receive non-diuretic AHT 
-#20.2 % of AD indivuals receive non-diuretic AHT.
-#Thus, Controls are more likely to receive non-diuretic AHT than individuals with AD.
+#Within HT cases, significant association between non-diuretic AHM and AD (X2(1) = 46.600, 
+p = 0.000).
+#Of the AD cases with HT, 25.00 % receive AHT.
+#Of the Control cases with HT, 76.47 % receive AHT.
 
 CROSSTABS
   /TABLES=cohort_AD_control BY ACEI_ARB 
   /FORMAT=AVALUE TABLES
-  /STATISTICS=CHISQ 
+    /STATISTICS=CHISQ 
   /CELLS=COUNT ROW PROP 
   /COUNT ROUND CELL
   /BARCHART.
 
-#X(1) = 27.387, p = 0.000
-#Significant association was found between AD and ACEI_ARB.
-#41.1 % of Control individuals receive AHT 
-#8.5 % of AD indivuals receive AHT.
-#Thus, Controls are more likely to receive ACEI_ARB than individuals with AD.
+#Within HT cases, significant association between ACEI/ARB treatment and AD (X2(1) = 24.265, 
+p = 0.000).
+#Of the AD cases with HT, 10.53 % receive AHT.
+#Of the Control cases with HT, 45.88 % receive AHT.
 
-#Prestenation: include final contingency table (with frequencies and row percentages) in the report (pivot tray to make it look prettier)
+LOGISTIC REGRESSION VARIABLES AHT_anyreason_rec
+  /METHOD=ENTER cohort_AD_control 
+  /CONTRAST (cohort_AD_control)=Indicator(1)
+  /CLASSPLOT
+  /PRINT=CORR CI(95)
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+
+
+LOGISTIC REGRESSION VARIABLES AHT_nondiuretic
+  /METHOD=ENTER cohort_AD_control 
+  /CONTRAST (cohort_AD_control)=Indicator(1)
+  /CLASSPLOT
+  /PRINT=CORR CI(95)
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+
+
+LOGISTIC REGRESSION VARIABLES ACEI_ARB
+  /METHOD=ENTER cohort_AD_control 
+  /CONTRAST (cohort_AD_control)=Indicator(1)
+  /CLASSPLOT
+  /PRINT=CORR CI(95)
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+
 
 #########################################################################################
 
-# Bc of sig. association between AHT and AD:
+#3.3. Relationship between different AHT and BP
+
+DATASET ACTIVATE DataSet1.
+# Originial, non-split
+
+# Comparing the means of two independent groups (AD vs Control) = t test (using non-split data) or non-paramentric alternative
+# Assumptions: Normality 
+# Shapiro-Wilk test as our numerical means of assessing normality (or hist or qqplot)
+#Data normally distributed if Shapiro test not sig.
+#Assumption of homogeneity of variance: levenes test must be non-significant
+
+#3.3.1. Comparing mean BP between any AHM and no AHM
+
+EXAMINE VARIABLES=SBP_midlife_mean SBP_65plus DBP_midlife_mean DBP_65plus
+  /PLOT BOXPLOT STEMLEAF NPPLOT
+  /COMPARE GROUPS
+  /STATISTICS DESCRIPTIVES
+  /CINTERVAL 95
+  /MISSING LISTWISE
+  /NOTOTAL.
+
+# Mid-life SBP/DBP and late-life SBP normally distributed -> Independent samples t test
+#Late-life DBP not normally distributed -> Mann-Whitney test 
+
+#Assumption for Mann-Whitney U test: equal shape distributions of the dependent variable
+#test of homogeneity of variance (same for kruskal wallis) as follows:
+
+EXAMINE VARIABLES=DBP_65plus BY AHT_anyreason_rec
+  /PLOT BOXPLOT STEMLEAF SPREADLEVEL(1)
+  /COMPARE GROUPS
+  /STATISTICS DESCRIPTIVES
+  /CINTERVAL 95
+  /MISSING LISTWISE
+  /NOTOTAL.
+
+#Based on Median and with adjusted df: not sig. 
+#Thus assumption met (equal distribution) and are able to use Mann U test
+
+T-TEST GROUPS=AHT_anyreason_rec(0 1)
+  /MISSING=ANALYSIS
+/VARIABLES=SBP_midlife_mean DBP_midlife_mean SBP_65plus
+  /CRITERIA=CI(.95). 
+
+#not significant
+
+NPAR TESTS
+  /M-W= DBP_65plus BY AHT_anyreason_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#p=0.046*
+
+#Late-life DBP sig. lower if AHM compared to no AHM . 
+#Mean rank AD = 107.32
+#Mean rand Control = 126.12
+# (U = 4446.000, p = .046).
+
+#########################################################################################
+
+#3.3.2. Comparing mean BP between non-diuretic AHM and no AHM
+
+T-TEST GROUPS=AHT_nondiuretic(0 1)
+  /MISSING=ANALYSIS
+/VARIABLES=SBP_midlife_mean DBP_midlife_mean SBP_65plus
+  /CRITERIA=CI(.95). 
+
+#not significant
+#Levenes non sig.
+#Late-life SBP sig. higher when taking non-diuretic AHM compared to no AHM (p=0.006*)
+#AHT: 144.58 ± 14.176
+#No AHT: 139.000 ± 15.984
+
+NPAR TESTS
+  /M-W= DBP_65plus BY AHT_nondiuretic(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#non-sig.
+
+#########################################################################################
+
+#Comparing mean BP between ACEI/ARB treatment and no AHM
+
+T-TEST GROUPS=ACEI_ARB(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=SBP_midlife_mean DBP_midlife_mean SBP_65plus
+  /CRITERIA=CI(.95).
+#non sig.
+
+NPAR TESTS
+  /M-W= DBP_65plus BY ACEI_ARB(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#non-sig.
+
+#########################################################################################
+#########################################################################################
+
+#Same thing but within the AD cohort: Is AHT successful in lowering BP?
+
+# Mid-life SBP/DBP and late-life SBP normally distributed -> Independent samples t test
+#Late-life DBP not normally distributed -> Mann-Whitney test 
+
+# Comparing mean BP between any AHM and no AHM within the AD cohort
+
+DATASET ACTIVATE DataSet5.
+# Originial, non-split
+
+T-TEST GROUPS=AHT_anyreason_rec(0 1)
+  /MISSING=ANALYSIS
+/VARIABLES=SBP_midlife_mean DBP_midlife_mean SBP_65plus
+  /CRITERIA=CI(.95). 
+
+#not significant
+
+NPAR TESTS
+  /M-W= DBP_65plus BY AHT_anyreason_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#DBP_65plus (U = 548.5; p = 0.074) = not significant
+#AD untreated mean late-life DBP: 83.15 ± 8.499
+#AD treated mean late-life DBP: 80.33 ± 8.642
+
+#########################################################################################
+
+#3.3.2. Comparing mean BP between non-diuretic AHM and no AHM
+
+T-TEST GROUPS=AHT_nondiuretic(0 1)
+  /MISSING=ANALYSIS
+/VARIABLES=SBP_midlife_mean DBP_midlife_mean SBP_65plus
+  /CRITERIA=CI(.95). 
+
+#not significant
+
+NPAR TESTS
+  /M-W= DBP_65plus BY AHT_nondiuretic(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#non-sig.
+
+#########################################################################################
+
+#Comparing mean BP between ACEI/ARB treatment and no AHM
+
+T-TEST GROUPS=ACEI_ARB(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=SBP_midlife_mean DBP_midlife_mean SBP_65plus
+  /CRITERIA=CI(.95).
+
+#Levenes non sig.
+#SBP_65plus; p=0.071
+#ACEI/ARB: 144.63 ± 12.946
+#none: 140 ± 16.115
+
+NPAR TESTS
+  /M-W= DBP_65plus BY ACEI_ARB(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#non-sig.
+
+#########################################################################################
+#########################################################################################
+
+#3.1. Association between AHM and AD
+
+#Test of association:
+#Model of effect of different types of AHM on risk of AD
+
+DATASET ACTIVATE DataSet1.
+#Original, non-split
+#AHT are to be compared to No AHM, with No AHM acting as the reference category (who were coded "0"). 
+#Therefore, First is chosen (i.e. Indicator(1)).
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER AHT_anyreason_rec 
+  /CONTRAST (AHT_anyreason_rec)=Indicator(1)
+  /CLASSPLOT
+  /PRINT=CORR CI(95)
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+#Sig. association between AHT and AD (p = 0.000). 
+#The model explained 27.5 % (Nagelkerke R2) of the variance in AD and correctly classified 73.4 % of cases.
+# Individuals AHT are 0.117 times as likely to be have AD as untreated individuals.
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER AHT_nondiuretic 
+  /CONTRAST (AHT_nondiuretic)=Indicator(1)
+  /CLASSPLOT
+  /PRINT=CORR CI(95)
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+#Sig. association between non-diuretic AHT and AD (p = 0.000). 
+#The model explained 29.2 % (Nagelkerke R2) of the variance in AD and correctly classified 73.9 % of cases.
+# Individuals with non-diuretic AHT are 0.116 times as likely to be have AD as untreated individuals.
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER ACEI_ARB 
+/CONTRAST (ACEI_ARB)=Indicator(1)
+  /CLASSPLOT
+  /PRINT=CORR CI(95)
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+#Sig. association between non-diuretic AHT and AD (p = 0.000). 
+#The model explained 18.5 % (Nagelkerke R2) of the variance in AD and correctly classified 64.8 % of cases.
+#Individuals with ACEI/ARB treatment are 0.134 times as likely to be have AD as untreated individuals.
+
+#########################################################################################
+
+#Test of association:
+#Model of effect of different types of AHM on risk of AD in HT individuals only
+
+DATASET ACTIVATE DataSet6.
+#Split by HT only
+
+SORT CASES  BY htn_rec .
+SPLIT FILE LAYERED BY htn_rec.
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER AHT_anyreason_rec 
+  /CONTRAST (AHT_anyreason_rec)=Indicator(1)
+  /CLASSPLOT
+  /PRINT=CORR CI(95)
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+#Within HT group, sig. association between any AHT and AD (p = 0.000). 
+#The model explained 27.9 % (Nagelkerke R2) of the variance in AD and correctly classified 73.3 % of cases.
+# HT Individuals with any AHT are 0.108 times as likely to be have AD as untreated individuals.
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER AHT_nondiuretic 
+  /CONTRAST (AHT_nondiuretic)=Indicator(1)
+  /CLASSPLOT
+  /PRINT=CORR CI(95)
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+#Within HT group, sig. association between non-diuretic AHT and AD (p = 0.000).
+#The model explained 32.3% (Nagelkerke R2) of the variance in AD and correctly classified 75.8% of cases.
+# HT Individuals with non-diuretic AHT are 0.103 times as likely to be have AD as untreated individuals.
+
+LOGISTIC REGRESSION VARIABLES cohort_AD_control
+  /METHOD=ENTER ACEI_ARB 
+/CONTRAST (ACEI_ARB)=Indicator(1)
+  /CLASSPLOT
+  /PRINT=CORR CI(95)
+  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
+
+#Within HT group, sig. association between ACEI/ARB treatment and AD (p = 0.000).
+#The model explained 19.9 % (Nagelkerke R2) of the variance in AD and correctly classified 66.5 % of cases.
+# HT Individuals with ACEI/ARB treatment are 0.139 times as likely to be have AD as untreated individuals.
+
+#########################################################################################
+
+# 3.4. Were AD cases more likely to have received less effective AHT?
+
 # Were the AD group more likely to have donated their brain in an earlier time when HT was less likely to be treated appropriately? 
 
 DATASET ACTIVATE DataSet5.
@@ -423,105 +755,24 @@ NPAR TESTS
 #U = 3242, p = 0.000
 #Control group sig. later year if death than AD group
 
-#########################################################################################
 
-#Test of association:
-#Model of effect of different types of AHM on risk of AD
-
-DATASET ACTIVATE DataSet1.
-#Original, non-split
-
-LOGISTIC REGRESSION VARIABLES cohort_AD_control
-  /METHOD=ENTER AHT_anyreason_rec 
-  /CONTRAST (AHT_anyreason_rec)=Indicator
-  /CLASSPLOT
-  /PRINT=CORR CI(95)
-  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
-
-# χ2(1) = 44.014, p = 0.000. 
-# Exp(B) = 8.569
-
-LOGISTIC REGRESSION VARIABLES cohort_AD_control
-  /METHOD=ENTER AHT_nondiuretic 
-  /CONTRAST (AHT_nondiuretic)=Indicator
-  /CLASSPLOT
-  /PRINT=CORR CI(95)
-  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
-
-# χ2(1) = 46.74, p = 0.000. 
-# Exp(B) = 8.612
-
-LOGISTIC REGRESSION VARIABLES cohort_AD_control
-  /METHOD=ENTER ACEI_ARB 
-/CONTRAST (ACEI_ARB)=Indicator
-  /CLASSPLOT
-  /PRINT=CORR CI(95)
-  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
-
-# χ2(1) = 27.387, p = 0.000. 
-# Exp(B) = 7.456
 
 #########################################################################################
-
-#Test of association:
-#Model of effect of different types of AHM on risk of AD in HT individuals only
-
-DATASET ACTIVATE DataSet6.
-#Split by HT only
-
-SORT CASES  BY htn_rec .
-SPLIT FILE LAYERED BY htn_rec.
-
-LOGISTIC REGRESSION VARIABLES cohort_AD_control
-  /METHOD=ENTER AHT_anyreason_rec 
-  /CONTRAST (AHT_anyreason_rec)=Indicator
-  /CLASSPLOT
-  /PRINT=CORR CI(95)
-  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
-
-# HT: χ2(1) = 36.05, p = 0.000; Exp(B) = 7.800
-# Norm: χ2(1) = 8.47, p = 0.005; Exp(B) = 9.250
-
-#Within both groups, AHT more likely to have resulted in AD?????
-
-LOGISTIC REGRESSION VARIABLES cohort_AD_control
-  /METHOD=ENTER AHT_nondiuretic 
-  /CONTRAST (AHT_nondiuretic)=Indicator
-  /CLASSPLOT
-  /PRINT=CORR CI(95)
-  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
-
-# HT: χ2(1) = 42.600, p = 0.000; Exp(B) = 9.75
-# Norm: χ2(1) = 7.723, p = 0.999; non. sig.
-
-#Within the HT group, non-diuretic AHT more likely to have resulted in AD?????
-
-LOGISTIC REGRESSION VARIABLES cohort_AD_control
-  /METHOD=ENTER ACEI_ARB 
-/CONTRAST (ACEI_ARB)=Indicator
-  /CLASSPLOT
-  /PRINT=CORR CI(95)
-  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).
-
-# HT: χ2(1) = 24.265, p = 0.000; Exp(B) = 7.207
-# Norm: χ2(1) = 4.024, p = 0.999; non-sig.
-
-#Within the HT group, ACEI_ARB treatment more likely to have resulted in AD?????
-
 #########################################################################################
 
-#6.2. Comparing mean BP between any AHM and no AHM
+#TASK 4: What is the relationship between HT and markers of disease severity?
 
-DATASET ACTIVATE DataSet1.
-# Originial, non-split
+#########################################################################################
+#########################################################################################
 
-# Comparing the means of two independent groups (AD vs Control) = t test (using non-split data) or non-paramentric alternative
-# Assumptions: Normality 
+# Comparing the means of two independent groups (HT vs Norm) = t test (using non-split data)
+# Assumptions: Normality and Homogeneity of variance: levenes test must be non-significant
 # Shapiro-Wilk test as our numerical means of assessing normality (or hist or qqplot)
-#Data normally distributed if Shapiro test not sig.
-#Assumption of homogeneity of variance: levenes test must be non-significant
+#Data normal if shapiro non sig.
 
-EXAMINE VARIABLES=SBP_midlife_mean SBP_65plus DBP_midlife_mean DBP_65plus
+DATASET ACTIVATE DataSet1.
+EXAMINE VARIABLES=AB40insol_fcx AB40insol_pccx AB42insol_fcx AB42insol_fwm AB42insol_pccx 
+    AB42insol_pcwm ab_4G8_f ab_4G8_p AT8_F AT8_P
   /PLOT BOXPLOT STEMLEAF NPPLOT
   /COMPARE GROUPS
   /STATISTICS DESCRIPTIVES
@@ -529,37 +780,10 @@ EXAMINE VARIABLES=SBP_midlife_mean SBP_65plus DBP_midlife_mean DBP_65plus
   /MISSING LISTWISE
   /NOTOTAL.
 
-# Mid-life SBP/DBP and late-life SBP normally distributed -> Independent samples t test
-#Late-life DBP not normally distributed -> Mann-Whitney test 
+#All sig. Shapiro i.e. non-normal distribution for all so Mann-Whitney for all
 
-T-TEST GROUPS=AHT_anyreason_rec(0 1)
-  /MISSING=ANALYSIS
-  /VARIABLES=SBP_midlife_mean
-  /CRITERIA=CI(.95).
-
-#Levenes non sig.
-#p=non sig.
-
-T-TEST GROUPS=AHT_anyreason_rec(0 1)
-  /MISSING=ANALYSIS
-  /VARIABLES=DBP_midlife_mean
-  /CRITERIA=CI(.95).
-
-#Levenes non sig.
-#p=0.901
-
-T-TEST GROUPS=AHT_anyreason_rec(0 1)
-  /MISSING=ANALYSIS
-  /VARIABLES=SBP_65plus
-  /CRITERIA=CI(.95).
-
-#Levenes non sig.
-#p= non sig.
-
-#Assumption for Mann-Whitney U test: equal shape distributions of the dependent variable
-#test of homogeneity of variance (same for kruskal wallis) as follows:
-
-EXAMINE VARIABLES=DBP_65plus BY AHT_anyreason_rec
+EXAMINE VARIABLES= AB40insol_fcx AB40insol_pccx AB42insol_fcx AB42insol_fwm AB42insol_pccx 
+    AB42insol_pcwm ab_4G8_f ab_4G8_p AT8_F AT8_P BY AHT_anyreason_rec
   /PLOT BOXPLOT STEMLEAF SPREADLEVEL(1)
   /COMPARE GROUPS
   /STATISTICS DESCRIPTIVES
@@ -567,60 +791,607 @@ EXAMINE VARIABLES=DBP_65plus BY AHT_anyreason_rec
   /MISSING LISTWISE
   /NOTOTAL.
 
-#Based on Median and with adjusted df: not sig. 
-#Thus assumption met (equal distribution) and are able to use Mann U test
+#Assumption for Mann-Whitney U test: equal shape distributions of the dependent variable
+#test of homogeneity of variance (same for kruskal wallis) as follows:
+#Based on Median and with adjusted df: must be non-sig.
+
+#AB40insol_fcx AT8_F AT8_P had sig. values
 
 NPAR TESTS
-  /M-W= DBP_65plus BY AHT_anyreason_rec(0 1)
+  /M-W= AB40insol_fcx AB40insol_pccx AB42insol_fcx AB42insol_fwm AB42insol_pccx 
+    AB42insol_pcwm ab_4G8_f ab_4G8_p AT8_F AT8_P BY htn_rec(0 1)
   /STATISTICS=DESCRIPTIVES QUARTILES
   /MISSING ANALYSIS.
 
-#p=0.046*
+#Aβ load (%) – frontal in HT compared to normotensive
+#HT group highest Aβ load 
+#Non-sig. (U = 3578.500, p = 0.649)
 
-#Late-life DBP sig. lower if AHM compared to no AHM . 
-#Mean rank AD = 107.32
-#Mean rand Control = 126.12
-# (U = 4446.000, p = .046).
+#Aβ load (%) – parietal in HT compared to normotensive
+#Norm group highest Aβ load 
+#Non-sig. (U = 3045.500, p = 0.624)
+
+#Tau (%) load – frontal in HT compared to normotensive
+#Norm group highest Tau load 
+#Non-sig. (U = 659.000, p = 0.660)
+
+#Tau (%) load – parietal in HT compared to normotensive
+#Norm group highest Tau load 
+#Non-sig. (U = 511.000, p = 0.533)
+
+#Aβ40 insoluble in fcx in HT compared to normotensive (p = 0.213)
+#Aβ40 insoluble in precuneus cortex in HT compared to normotensive (p=0.833)
+#Both non-sig.
+
+#Aβ42 insoluble in fcx in HT compared to normotensive  (p = 0.409)
+#Aβ42 insoluble in precuneus cortex in HT compared to normotensive (p = 0.485)
+#Aβ42 insoluble in fwm in HT compared to normotensive (p = 0.456)
+#Aβ42 insoluble in precuneus white matter in HT compared to normotensive (p = 0.024)
+
+#All non-sig. except for Aβ42 insoluble in precuneus white matter
+#Aβ42 insoluble highest in precuneus white matter in HT (118.21) compared to norm (90.91)*
 
 
-#Repeat this but exclusively in AD group:
+#########################################################################################
+
+#3.5. Repeat all but with hypertension in mid-life instead of hypertension ever in life
+
+NPAR TESTS
+  /M-W= AB40insol_fcx AB40insol_pccx AB42insol_fcx AB42insol_fwm AB42insol_pccx AB42insol_pcwm 
+    ab_4G8_f ab_4G8_p AT8_F AT8_P BY htn_midlife_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#All non-sig. except for Aβ load - parietal
+#Aβ load - parietal highest in norm (75.42) compared to HT (59.31)*
+#Tau load parietal, p=0.056 (highest in norm (57.95) compared to HT (45.95))*
+
+#########################################################################################
+#########################################################################################
+
+#Comparing markers of disease severity in HT ever in life vs normotensive within the AD cohort
 
 DATASET ACTIVATE DataSet5.
-# Split by AD only
-
-T-TEST GROUPS=AHT_anyreason_rec(0 1)
-  /MISSING=ANALYSIS
-  /VARIABLES=SBP_midlife_mean
-  /CRITERIA=CI(.95).
-
-#Levenes non sig.
-#Control: p=0.039
-#Witin the control group, mid-life SBP higher when taking AHM ???
-
-T-TEST GROUPS=AHT_anyreason_rec(0 1)
-  /MISSING=ANALYSIS
-  /VARIABLES=DBP_midlife_mean
-  /CRITERIA=CI(.95).
-
-#Levenes non sig.
-#Control: p=0.030
-#Witin the control group, mid-life SBP higher when taking AHM ???
-
-T-TEST GROUPS=AHT_anyreason_rec(0 1)
-  /MISSING=ANALYSIS
-  /VARIABLES=SBP_65plus
-  /CRITERIA=CI(.95).
-
-#Levenes non sig.
-#All non sig.
+# Originial, non-split
 
 NPAR TESTS
-  /M-W= DBP_65plus BY AHT_anyreason_rec(0 1)
+  /M-W= AB40insol_fcx AB40insol_pccx AB42insol_fcx AB42insol_fwm AB42insol_pccx 
+    AB42insol_pcwm ab_4G8_f ab_4G8_p AT8_F AT8_P BY htn_rec(0 1)
   /STATISTICS=DESCRIPTIVES QUARTILES
   /MISSING ANALYSIS.
 
-#All non sig.
+#Within the AD cohort, no sig. differences in markers of disease severity in HT ever in life compared to normotensive.
 
-#AD (U = 548.500, p = 0.074)
+NPAR TESTS
+  /M-W= AB40insol_fcx AB40insol_pccx AB42insol_fcx AB42insol_fwm AB42insol_pccx AB42insol_pcwm 
+    ab_4G8_f ab_4G8_p AT8_F AT8_P BY htn_midlife_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
 
+#Within the AD cohort, no sig. differences in markers of disease severity in mid-life HT compared to normotensive.
+
+
+#########################################################################################
+#########################################################################################
+
+#4.1.1. Is there any age-related effects on markers of disease severity in the HT vs normotensive group?
+
+DATASET ACTIVATE DataSet1.
+
+EXAMINE VARIABLES=AGE age_onset duration 
+  /PLOT BOXPLOT STEMLEAF NPPLOT
+  /COMPARE GROUPS
+  /STATISTICS DESCRIPTIVES
+  /CINTERVAL 95
+  /MISSING LISTWISE
+  /NOTOTAL.
+  
+#AGE and age_onset non sig. i.e. normal distribution and thus t test
+#duration sig. i.e. no normal distribrution
+
+NPAR TESTS
+  /M-W= duration BY htn_midlife_rec (0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#Durtation: No sig. difference p=0.307
+
+DATASET ACTIVATE DataSet7.
+SORT CASES  BY htn_midlife_rec.
+SPLIT FILE LAYERED BY htn_midlife_rec.
+
+
+DESCRIPTIVES VARIABLES=duration 
+  /STATISTICS=MEAN STDDEV MIN MAX.
+
+#Mean duration of dementia for mid-life HT = 8.71 ± 4.16
+#Mean duration of dementia for Norm = 9.33 ± 3.68
+#But: only 24 norm vs 49 mid-life HT cases
+
+DATASET ACTIVATE DataSet1.
+
+T-TEST GROUPS=htn_midlife_rec (0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=AGE age_onset
+  /CRITERIA=CI(.95).
+
+#Age: levenes sig.; equal variances no assumed; p = 0.181
+#Mean age of mid-life HT cohort = 80.20 ± 8.89
+#Mean age of norm cohort = 77.27 ± 12.58
+#But: only 41 norm vs 93 mid-life HT cases
+
+#Age of onset: levenes sig.; equal variances no assumed; p = 0.057
+#Mean age of HT cohort = 69.33 ± 9.65
+#Mean age of norm cohort = 64.46 ± 11.01
+#But: only 24 norm vs 49 HT cases
+
+
+
+
+
+
+#########################################################################################
+#########################################################################################
+
+#TASK 5: Is there a relationship between hypertension and a reduction in blood flow in the cerebral cortex and white matter?
+
+#########################################################################################
+#########################################################################################
+
+#5.1. Hypertension ever in life compared to normotensive
+
+# Comparing the means of two independent groups (HT vs Norm) = t test (using non-split data)
+# Assumptions: Normality and Homogeneity of variance: levenes test must be non-significant
+#Check for normal distribution
+
+#5.1.1. VEGF-A
+
+EXAMINE VARIABLES=VEGF_fcx2 VEGF_fwm2 VEGF_pccx2 VEGF_pcwm2 
+  /PLOT BOXPLOT STEMLEAF NPPLOT
+  /COMPARE GROUPS
+  /STATISTICS DESCRIPTIVES
+  /CINTERVAL 95
+  /MISSING LISTWISE
+  /NOTOTAL.
+
+#Non-normal distribution for all so Mann-Whitney for all
+
+NPAR TESTS
+  /M-W= VEGF_fcx2 VEGF_fwm2 VEGF_pccx2 VEGF_pcwm2 BY htn_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#VEGF-A in fcx in HT compared to normotensive (U= 3854.5; p= 0.154)
+#VEGF-A in fwm HT compared to normotensive (U = 4414.5; p= 0.894)
+#VEGF-A in parietal cx in HT compared to normotensive (U= 4389; p= 0.926)
+#VEGF-A in parietal wm in HT compared to normotensive (U= 4274.5; p= 0.615)
+
+#All non-sig. 
+
+#########################################################################################
+
+#5.1.2. Haemoglobin-adjusted Fibrinogen
+
+EXAMINE VARIABLES=FGA_Hb_fcx FGA_Hb_fwm FGA_Hb_pcx FGA_Hb_pwm
+  /PLOT BOXPLOT STEMLEAF NPPLOT
+  /COMPARE GROUPS
+  /STATISTICS DESCRIPTIVES
+  /CINTERVAL 95
+  /MISSING LISTWISE
+  /NOTOTAL.
+#Non-normal distribution for all so Mann-Whitney for all
+
+NPAR TESTS
+  /M-W= FGA_Hb_fcx FGA_Hb_fwm FGA_Hb_pcx FGA_Hb_pwm BY htn_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#Haemoglobin-adjusted Fibrinogen in fcx in HT compared to normotensive
+#Haemoglobin-adjusted Fibrinogen in parietal cx in HT compared to normotensive
+#Haemoglobin-adjusted Fibrinogen in fwm in HT compared to normotensive
+#Haemoglobin-adjusted Fibrinogen in parietal wm in HT compared to normotensive
+
+#All non-sig. 
+
+#########################################################################################
+
+#5.1.3. PDGFRB
+
+EXAMINE VARIABLES=PDGFRB_pccx2 PDGFRB_fwm2 PDGFRB_fcx2 PDGFRB_pcwm2
+  /PLOT BOXPLOT STEMLEAF NPPLOT
+  /COMPARE GROUPS
+  /STATISTICS DESCRIPTIVES
+  /CINTERVAL 95
+  /MISSING LISTWISE
+  /NOTOTAL.
+
+#PDGFRB_pccx2 PDGFRB_fcx2 non-sig. i.e. normal distribution
+#PDGFRB_fwm2 PDGFRB_pcwm2 non normal distribution
+
+#normal distribution; check levenes, if non sig. then t test
+
+T-TEST GROUPS=htn_rec(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=PDGFRB_pccx2 PDGFRB_fcx2
+  /CRITERIA=CI(.95).
+
+#All non-sig. 
+
+#Mann-Whitney
+
+NPAR TESTS
+  /M-W= PDGFRB_fwm2 PDGFRB_pcwm2 BY htn_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#All non-sig.
+#Frontal white matter 
+
+
+#########################################################################################
+
+#5.2. Mid-life hypertension compared to normotensive
+
+NPAR TESTS
+  /M-W= VEGF_fcx2 VEGF_fwm2 VEGF_pccx2 VEGF_pcwm2 FGA_Hb_fcx FGA_Hb_fwm FGA_Hb_pcx 
+  FGA_Hb_pwm PDGFRB_pccx2 PDGFRB_fcx2 BY htn_midlife_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#All non-sig.
+
+T-TEST GROUPS=htn_midlife_rec(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES= PDGFRB_pccx2 PDGFRB_fcx2
+  /CRITERIA=CI(.95).
+
+#All non-sig.
+
+#########################################################################################
+
+#5.3. Relationship between HT and a reduction in blood flow in the cerebral cortex and white matter within the AD cohort
+
+DATASET ACTIVATE DataSet5.
+#Repeat analysis within the AD group
+
+#HT ever in life 
+
+NPAR TESTS
+  /M-W= VEGF_fcx2 VEGF_fwm2 VEGF_pccx2 VEGF_pcwm2 FGA_Hb_fcx FGA_Hb_fwm FGA_Hb_pcx 
+  FGA_Hb_pwm PDGFRB_pccx2 PDGFRB_fcx2 BY htn_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+T-TEST GROUPS=htn_rec(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES= PDGFRB_pccx2 PDGFRB_fcx2
+  /CRITERIA=CI(.95).
+
+#Within the AD cohort, still all non-sig.
+
+#Mid-life HT
+
+NPAR TESTS
+  /M-W= VEGF_fcx2 VEGF_fwm2 VEGF_pccx2 VEGF_pcwm2 FGA_Hb_fcx FGA_Hb_fwm FGA_Hb_pcx 
+  FGA_Hb_pwm PDGFRB_pccx2 PDGFRB_fcx2 BY htn_midlife_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#All non-sig.
+
+T-TEST GROUPS=htn_midlife_rec(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES= PDGFRB_pccx2 PDGFRB_fcx2
+  /CRITERIA=CI(.95).
+
+#5.4. Differences in CBF between mid and late-life.
+
+CROSSTABS
+  /TABLES=htn_rec BY htn_midlife_rec
+  /FORMAT=AVALUE TABLES
+    /STATISTICS=CHISQ 
+  /CELLS=COUNT ROW PROP 
+  /COUNT ROUND CELL
+  /BARCHART.
+
+#########################################################################################
+#########################################################################################
+
+#4.3. Relationship between CAA and SVD and (mid-life HT) within the AD cohort.
+
+DATASET ACTIVATE DataSet1.
+
+CROSSTABS
+  /TABLES=htn_rec htn_midlife_rec BY SVD_frontal SVD_parietal CAA_frontal CAA_parietal
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ 
+  /CELLS=COUNT ROW ASRESID 
+  /COUNT ROUND CELL.
+#Scores
+
+CROSSTABS
+  /TABLES=htn_rec htn_midlife_rec BY SVD_frontal_rec SVD_parietal_rec CAA_frontal_rec 
+    CAA_parietal_rec
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ 
+  /CELLS=COUNT ROW ASRESID 
+  /COUNT ROUND CELL.
+#Binary variable
+
+
+#no statistically significant association between HT ever in life or mid-life HT and CAA/SVD; 
+
+#ANOVA Assumption: normal distribution of residuals
+
+DATASET ACTIVATE DataSet5.
+
+CROSSTABS
+  /TABLES=htn_rec htn_midlife_rec BY SVD_frontal SVD_parietal CAA_frontal CAA_parietal
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ 
+  /CELLS=COUNT ROW ASRESID 
+  /COUNT ROUND CELL.
+#Scores
+
+CROSSTABS
+  /TABLES=htn_rec htn_midlife_rec BY SVD_frontal_rec SVD_parietal_rec CAA_frontal_rec 
+    CAA_parietal_rec
+  /FORMAT=AVALUE TABLES
+  /STATISTICS=CHISQ 
+  /CELLS=COUNT ROW ASRESID 
+  /COUNT ROUND CELL.
+#Binary variable
+
+##############################################################################
+
+#6.1. Differences in mean BP between Frontal/Parietal SVD/CAA and control within the AD cohort
+
+#6.1.1. Binary variable 
+
+#Frontal SVD within the AD cohort
+
+DATASET ACTIVATE DataSet5.
+
+#Binary variable and thus independent samples t test
+
+EXAMINE VARIABLES=SBP_midlife_mean SBP_65plus DBP_midlife_mean DBP_65plus
+  /PLOT BOXPLOT NPPLOT
+  /COMPARE GROUPS
+  /STATISTICS DESCRIPTIVES
+  /CINTERVAL 95
+  /MISSING LISTWISE
+  /NOTOTAL.
+
+# Mid-life SBP/DBP and late-life DBP normally distributed -> Independent samples t test
+#Late-life SBP not normally distributed -> Mann-Whitney test 
+
+T-TEST GROUPS=SVD_frontal_rec(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=SBP_midlife_mean DBP_midlife_mean DBP_65plus
+  /CRITERIA=CI(.95).
+
+#Equal variances not assumed (p=0.0120): 
+#Statistically significant difference in the mean mid-life DBP between the 
+#frontal SVD group (81.76 ± 8.376) and the control group (79.14 ± 7.515) 
+#(t(26.202)=-2.060, p=.049.)
+
+
+NPAR TESTS
+  /M-W= SBP_65plus BY SVD_frontal_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#non sig.
+
+#######################################
+
+#Parietal SVD within the AD cohort
+
+T-TEST GROUPS=SVD_parietal_rec(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=SBP_midlife_mean DBP_midlife_mean DBP_65plus
+  /CRITERIA=CI(.95).
+
+#non sig.
+
+NPAR TESTS
+  /M-W= SBP_65plus BY SVD_parietal_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#non sig.
+
+
+#######################################
+
+#Frontal CAA within the AD cohort
+
+T-TEST GROUPS=CAA_frontal_rec(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=SBP_midlife_mean DBP_midlife_mean DBP_65plus
+  /CRITERIA=CI(.95).
+
+#non sig.
+
+NPAR TESTS
+  /M-W= SBP_65plus BY CAA_frontal_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#non sig.
+
+#######################################
+
+#Parietal CAA within the AD cohort
+
+T-TEST GROUPS=CAA_parietal_rec(0 1)
+  /MISSING=ANALYSIS
+  /VARIABLES=SBP_midlife_mean DBP_midlife_mean DBP_65plus
+  /CRITERIA=CI(.95).
+
+#non sig.
+
+NPAR TESTS
+  /M-W= SBP_65plus BY CAA_parietal_rec(0 1)
+  /STATISTICS=DESCRIPTIVES QUARTILES
+  /MISSING ANALYSIS.
+
+#non sig.
+
+##############################################################################
+
+#6.1.1. Categorical variable (3 categories) 
+
+#Frontal SVD
+
+#Create the residuals (using original data set):
+
+DATASET ACTIVATE DataSet5.
+
+UNIANOVA SBP_midlife_mean DBP_midlife_mean SBP_65plus DBP_65plus BY SVD_frontal
+  /METHOD=SSTYPE(3)
+  /INTERCEPT=INCLUDE
+  /SAVE=RESID
+  /CRITERIA=ALPHA(0.05)
+  /DESIGN=SVD_frontal.
+
+EXAMINE VARIABLES=RES_1 RES_2 RES_3 RES_4
+  /PLOT BOXPLOT STEMLEAF NPPLOT
+  /COMPARE GROUPS
+  /STATISTICS DESCRIPTIVES
+  /CINTERVAL 95
+  /MISSING LISTWISE
+  /NOTOTAL.
+
+#Residuals for SBP_65 plus not normally distributed -> KruslaL Wallis
+
+ONEWAY SBP_midlife_mean DBP_midlife_mean DBP_65plus BY SVD_frontal
+  /STATISTICS DESCRIPTIVES HOMOGENEITY WELCH 
+  /MISSING ANALYSIS
+  /POSTHOC=GH ALPHA(0.05).
+
+#No levenes could not be computed: You should run Welch’s test in all cases where you have normally 
+#distributed data that violates the assumption of homogeneity of variance. 
+
+#Non sig.
+
+NPAR TESTS
+  /K-W= SBP_65plus BY SVD_frontal(0 3)
+  /STATISTICS DESCRIPTIVES 
+  /MISSING ANALYSIS.
+
+#Non sig.
+#No statistically significant difference in BP between the different SVD scores.
+
+#######################################
+
+#Parietal SVD
+
+#Create the residuals:
+
+DATASET ACTIVATE DataSet5.
+UNIANOVA SBP_midlife_mean DBP_midlife_mean SBP_65plus DBP_65plus BY SVD_parietal
+  /METHOD=SSTYPE(3)
+  /INTERCEPT=INCLUDE
+  /SAVE=RESID
+  /CRITERIA=ALPHA(0.05)
+  /DESIGN=SVD_parietal.
+
+EXAMINE VARIABLES= RES_5 RES_6 RES_7 RES_8
+  /PLOT BOXPLOT STEMLEAF NPPLOT
+  /COMPARE GROUPS
+  /STATISTICS DESCRIPTIVES
+  /CINTERVAL 95
+  /MISSING LISTWISE
+  /NOTOTAL.
+
+#All normally distributed
+
+ONEWAY SBP_midlife_mean SBP_65plus DBP_midlife_mean DBP_65plus BY SVD_parietal
+  /STATISTICS DESCRIPTIVES HOMOGENEITY WELCH 
+  /MISSING ANALYSIS
+  /POSTHOC=GH ALPHA(0.05).
+
+#No levenes could not be computed
+#You should run Welch’s test in all cases where you have normally distributed data 
+#that violates the assumption of homogeneity of variance. 
+
+#When you use Welch’s ANOVA, you can use the Games-Howell multiple comparisons method.
+
+#Welch ANOVA: Statistically significant difference in the mean late-life DBP between the 
+#parietal SVD group (82.86 ± 8.410) and the control group (79.14 ± 3.078) (F(3,18.531) = 3.155, p = .049). 
+
+#A Games-Howell post hoc test revealed that late-life DBP was statistically significantly lower for 
+frontal CAA score 0 (78.18 ± 7.427, p = .042) compared to score 3 (87.40 ± 4.506). 
+
+
+#######################################
+
+#Frontal CAA
+
+#Create the residuals:
+
+DATASET ACTIVATE DataSet5.
+UNIANOVA SBP_midlife_mean DBP_midlife_mean SBP_65plus DBP_65plus BY CAA_frontal
+  /METHOD=SSTYPE(3)
+  /INTERCEPT=INCLUDE
+  /SAVE=RESID
+  /CRITERIA=ALPHA(0.05)
+  /DESIGN=CAA_frontal.
+
+EXAMINE VARIABLES= RES_9 RES_10 RES_11 RES_12
+  /PLOT BOXPLOT STEMLEAF NPPLOT
+  /COMPARE GROUPS
+  /STATISTICS DESCRIPTIVES
+  /CINTERVAL 95
+  /MISSING LISTWISE
+  /NOTOTAL.
+
+#All normally distributed
+
+ONEWAY SBP_midlife_mean SBP_65plus DBP_midlife_mean DBP_65plus BY CAA_frontal
+  /STATISTICS DESCRIPTIVES HOMOGENEITY WELCH 
+  /MISSING ANALYSIS
+  /POSTHOC=GH ALPHA(0.05).
+
+#No levenes could not be computed
+#You should run Welch’s test in all cases where you have normally distributed data 
+#that violates the assumption of homogeneity of variance. 
+
+#Non sig.
+
+#######################################
+
+#Parietal CAA
+
+#Create the residuals:
+
+DATASET ACTIVATE DataSet5.
+UNIANOVA SBP_midlife_mean DBP_midlife_mean SBP_65plus DBP_65plus BY CAA_parietal
+  /METHOD=SSTYPE(3)
+  /INTERCEPT=INCLUDE
+  /SAVE=RESID
+  /CRITERIA=ALPHA(0.05)
+  /DESIGN=CAA_parietal.
+
+EXAMINE VARIABLES= RES_13 RES_14 RES_15 RES_16
+  /PLOT BOXPLOT STEMLEAF NPPLOT
+  /COMPARE GROUPS
+  /STATISTICS DESCRIPTIVES
+  /CINTERVAL 95
+  /MISSING LISTWISE
+  /NOTOTAL.
+
+#All normally distributed
+
+ONEWAY SBP_midlife_mean SBP_65plus DBP_midlife_mean DBP_65plus BY CAA_parietal
+  /STATISTICS DESCRIPTIVES HOMOGENEITY WELCH 
+  /MISSING ANALYSIS
+  /POSTHOC=GH ALPHA(0.05).
+
+#No levenes could not be computed
+#You should run Welch’s test in all cases where you have normally distributed data 
+#that violates the assumption of homogeneity of variance. 
+
+#Non sig.
 
